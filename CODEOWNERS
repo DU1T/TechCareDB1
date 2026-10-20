@@ -1,0 +1,10 @@
+# Reemplazar @usuarioA/B/C por los usuarios reales de GitHub
+/database/0*            @usuarioA @usuarioB @usuarioC
+/database/10_*          @usuarioA @usuarioB @usuarioC
+/database/30_*          @usuarioA @usuarioB @usuarioC
+/database/40_*          @usuarioA @usuarioB @usuarioC
+/database/*ordenes*     @usuarioB
+/database/*inventario*  @usuarioC
+/database/*facturacion* @usuarioA
+/backend/               @usuarioB
+/frontend/              @usuarioA

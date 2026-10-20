@@ -1,0 +1,52 @@
+# Verifica en cada push / PR que el script maestro y los datos de prueba
+# se ejecutan sin errores en un SQL Server 2022 limpio.
+# Si este check falla, el PR NO se mezcla (activar "Require status checks" en la rama main).
+name: db-build
+
+on:
+  push:
+    branches: [main]
+    paths: ['database/**', '.github/workflows/db-build.yml']
+  pull_request:
+    paths: ['database/**', '.github/workflows/db-build.yml']
+
+jobs:
+  sql:
+    runs-on: ubuntu-latest
+    env:
+      SA_PASSWORD: 'Ci_TechCare_2026!x'      # solo vive dentro del runner temporal
+      SQLCMD: /opt/mssql-tools18/bin/sqlcmd
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Levantar SQL Server 2022
+        run: |
+          docker run -d --name sql -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD="$SA_PASSWORD" \
+            -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+          for i in $(seq 1 40); do
+            docker exec sql $SQLCMD -S localhost -U sa -P "$SA_PASSWORD" -C -Q "SELECT 1" >/dev/null 2>&1 && exit 0
+            sleep 3
+          done
+          echo "SQL Server no arrancó"; docker logs sql; exit 1
+
+      - name: Generar scripts
+        run: bash database/build_master.sh
+
+      # -I: QUOTED_IDENTIFIER ON (sqlcmd lo deja en OFF y fallan índices filtrados)
+      - name: Ejecutar master
+        run: |
+          docker cp database/build/TechCare_Master.sql sql:/tmp/master.sql
+          docker exec sql $SQLCMD -S localhost -U sa -P "$SA_PASSWORD" -C -b -I -f 65001 -i /tmp/master.sql
+
+      - name: Ejecutar datos de prueba
+        run: |
+          docker cp database/build/TechCare_DatosPrueba.sql sql:/tmp/datos.sql
+          docker exec sql $SQLCMD -S localhost -U sa -P "$SA_PASSWORD" -C -b -I -f 65001 -i /tmp/datos.sql
+
+      - name: Resumen de objetos creados
+        run: |
+          docker exec sql $SQLCMD -S localhost -U sa -P "$SA_PASSWORD" -C -d TechCare -W -Q "
+            SELECT type_desc AS tipo, COUNT(*) AS cantidad
+            FROM sys.objects
+            WHERE is_ms_shipped = 0 AND type IN ('U','V','P','FN','IF','TF','TR')
+            GROUP BY type_desc ORDER BY type_desc;"

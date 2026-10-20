@@ -1,0 +1,39 @@
+/* =====================================================================
+   82_datos_compras.sql  |  Dueño: FULLSTACK/INFRA
+   ---------------------------------------------------------------------
+   - 20+ compras con EXEC dbo.sp_RegistrarCompra; recibir 17 con sp_RecibirCompra
+     y dejar 3+ PENDIENTES. Un mismo repuesto comprado en 2-3 bodegas.
+   - Dejar un repuesto con existencia 0 en una bodega y existencia en otra (T04)
+     y 3+ repuestos bajo el mínimo (reporte 7, dashboard).
+   Patrón:
+     DECLARE @d dbo.TipoDetalleCompra, @idCompra INT;
+     INSERT INTO @d (idRepuesto, cantidad, costoUnitario) VALUES (1, 10, 150.00), (2, 5, 420.50);
+     EXEC dbo.sp_RegistrarCompra @idProveedor = 1, @idBodegaDestino = 1,
+          @numeroDocumento = 'FAC-1001', @idUsuario = 4, @detalle = @d;
+     SELECT @idCompra = idCompra FROM dbo.Compra WHERE idProveedor = 1 AND numeroDocumento = 'FAC-1001';
+     EXEC dbo.sp_RecibirCompra @idCompra = @idCompra, @idUsuario = 4;
+   ---------------------------------------------------------------------
+   Los datos de prueba se reparten en 6 archivos, uno por dueño; el build los
+   une EN ESTE ORDEN en TechCare_DatosPrueba.sql (entregable 03):
+     80_datos_usuarios.sql     B  10+ usuarios con hash real y sus roles (los genera el backend)
+     81_datos_maestros.sql     C  clientes, equipos, repuestos, inventario (stockMinimo), proveedores
+     82_datos_compras.sql      C  20+ compras vía SP (17 recibidas, 3+ PENDIENTES)
+     83_datos_ordenes.sql      B  60+ órdenes, 45+ diagnósticos, 35+ reparaciones, repuestos usados
+     84_datos_facturacion.sql  A  30+ facturas, 40+ pagos, entregas
+     85_datos_escenarios.sql   C  fechas repartidas, escenarios de la defensa y verificación de mínimos
+   REGLA DE ORO: todo lo transaccional se crea LLAMANDO A LOS SP. Si un SP falla
+   al generar datos, encontraron un bug antes que el profesor.
+   Para recuperar el id que crea un SP, búsquelo después por su llave de negocio
+   (no use INSERT ... EXEC con SP que tienen transacción: falla con el error 3915).
+   ===================================================================== */
+-- Se ejecuta sobre la base a la que esté conectado: TechCare, TechCare_<nombre> o Azure.
+-- Si está en otra base (p. ej. master) se detiene sin crear nada.
+IF DB_NAME() NOT LIKE N'TechCare%'
+BEGIN
+    RAISERROR(N'Conéctese primero a una base TechCare o TechCare_<nombre>. Script detenido.', 16, 1);
+    SET NOEXEC ON;
+END
+GO
+
+SET NOEXEC OFF;
+GO
