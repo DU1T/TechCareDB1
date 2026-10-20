@@ -42,3 +42,5 @@ Windows: `./build_master.ps1 [-Db TechCare_Ana] [-Azure]`.
 - Códigos THROW: 500xx núcleo · 501xx inventario · 502xx órdenes · 503xx facturación · 510xx triggers.
 - SP de proceso devuelven el id creado en un SELECT final; en los scripts de datos se recupera por la llave de negocio.
 - `build/` no se edita ni se sube a git: se regenera.
+
+<!-- prueba CI -->
