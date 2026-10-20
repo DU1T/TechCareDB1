@@ -13,8 +13,8 @@ $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 
 function Nueva-Clave {
-    # Sin ; ' " ni espacios para que no rompan cadenas de conexión ni sqlcmd
-    $c = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!#%+=?'
+    # Sin ; ' " = % ni espacios: rompen cadenas de conexión o el -v de sqlcmd
+    $c = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!#+?'
     $txt = -join (1..20 | ForEach-Object { $c[(Get-Random -Maximum $c.Length)] })
     return $txt + 'Aa9!'   # garantiza mayúscula, minúscula, dígito y símbolo
 }
