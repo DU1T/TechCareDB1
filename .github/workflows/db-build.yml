@@ -41,7 +41,7 @@ jobs:
       - name: Ejecutar datos de prueba
         run: |
           docker cp database/build/TechCare_DatosPrueba.sql sql:/tmp/datos.sql
-          docker exec sql $SQLCMD -S localhost -U sa -P "$SA_PASSWORD" -C -b -I -f 65001 -i /tmp/datos.sql
+          docker exec sql $SQLCMD -S localhost -U sa -P "$SA_PASSWORD" -C -b -I -f 65001 -d TechCare -i /tmp/datos.sql
 
       - name: Resumen de objetos creados
         run: |
