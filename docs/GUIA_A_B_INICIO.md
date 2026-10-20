@@ -26,10 +26,12 @@ Abre **Terminal** o **PowerShell** como usuario normal y ejecuta:
 ```powershell
 winget install Git.Git
 winget install Microsoft.PowerShell
-winget install dbeaver.dbeaver
 ```
 
-Instala también **SSMS** (SQL Server Management Studio) desde el sitio de Microsoft: busca "Download SSMS". DBeaver y SSMS sirven para lo mismo; usa el que prefieras.
+Instala también **SSMS** (SQL Server Management Studio), que es la herramienta para ver y consultar las bases:
+
+1. Busca **"Download SSMS"** en el sitio de Microsoft y descarga el instalador más reciente.
+2. Ejecútalo con las opciones por defecto. Tarda unos 10 minutos; puedes seguir con el Paso 2 mientras tanto.
 
 **Cierra la terminal.** Desde ahora, todo se hace en **PowerShell 7**: menú Inicio → escribe `pwsh` → abre *PowerShell 7*. Verifica:
 
@@ -119,14 +121,19 @@ El script borra y vuelve a crear tu base desde cero. Puedes ejecutarlo todas las
 
 ### Verificar
 
-Conéctate a tu base local:
+Abre **SSMS**. Aparece la ventana *Connect to Server*:
 
-| Herramienta | Cómo |
+| Campo | Valor |
 |---|---|
-| **SSMS** | Server name: `localhost` · Authentication: *Windows Authentication* · marca **Trust server certificate** |
-| **DBeaver** | *New Database Connection* → **SQL Server** → *Connect by: Host* · Host `localhost` · Port `1433` · Database `TechCare_Back` (o `_Front`) · Authentication *Windows Authentication* · en *Driver properties*: `trustServerCertificate` = `true`. Nombre: **Local · TechCare_Back** |
+| Server type | Database Engine |
+| Server name | `localhost` (o `.` si tuviste el error SSPI; o `localhost\SQLEXPRESS` si tu instancia tiene nombre) |
+| Authentication | **Windows Authentication** |
+| Encryption | Mandatory |
+| **Trust server certificate** | **Marcado** (tu SQL local usa un certificado propio) |
 
-Ejecuta:
+Clic en **Connect**. En el panel izquierdo (*Object Explorer*) despliega **Databases**: debe aparecer `TechCare_Back` (o `TechCare_Front`).
+
+Clic derecho en tu base → **New Query**. Revisa que arriba, en el selector de bases, diga tu base y no `master`. Pega y ejecuta con **F5**:
 
 ```sql
 SELECT type_desc, COUNT(*) AS cantidad
@@ -136,8 +143,6 @@ GROUP BY type_desc;
 ```
 
 Esperado hoy: **32** tablas, **1** vista, **6** procedimientos, **4** funciones escalares, **1** trigger. Si coincide, tu base local está lista.
-
-> En DBeaver, si "Windows Authentication" no conecta, en *Driver properties* pon `integratedSecurity` = `true`. Si aún falla, usa SSMS para la base local y DBeaver solo para Azure.
 
 ---
 
@@ -153,12 +158,23 @@ Tu IP cambia si te conectas desde otro lugar (universidad, celular, casa de algu
 
 C te manda por **mensaje privado** tu contraseña. Nunca la pegues en el grupo, en git ni en el código.
 
-| Herramienta | Configuración |
-|---|---|
-| **SSMS** | Server name: `techcare-grupo-bhl.database.windows.net` · Authentication: *SQL Server Authentication* · Login: `dev_back` (o `dev_front`) · Password · **Options → Connection Properties → Connect to database:** `TechCare` · Encryption: **Mandatory** · **sin** marcar *Trust server certificate* |
-| **DBeaver** | *New Database Connection* → **Azure SQL Server** (o SQL Server) → *Connect by: Host* · Host `techcare-grupo-bhl.database.windows.net` · Port `1433` · Database `TechCare` · *SQL Server Authentication* · usuario y contraseña · *Driver properties*: `encrypt` = `true`, `trustServerCertificate` = `false`, `hostNameInCertificate` = `*.database.windows.net`. Nombre: **Azure · dev_back** |
+En SSMS: **File → Connect Object Explorer** (o el ícono de enchufe en *Object Explorer*). En la ventana *Connect to Server*:
 
-La base de datos `TechCare` es **obligatoria**: tu usuario solo existe dentro de esa base. Sin ella, el error es *Login failed* (18456).
+| Campo | Valor |
+|---|---|
+| Server type | Database Engine |
+| Server name | `techcare-grupo-bhl.database.windows.net` |
+| Authentication | **SQL Server Authentication** |
+| Login | `dev_back` (B) o `dev_front` (A) |
+| Password | La que te mandó C · marca *Remember password* |
+| Encryption | **Mandatory** |
+| Trust server certificate | **Sin marcar** (Azure tiene certificado válido) |
+
+Antes de conectar, clic en **Options >>** (abajo a la derecha) → pestaña **Connection Properties** → en **Connect to database** escribe `TechCare` (no lo elijas de la lista: escríbelo). Luego **Connect**.
+
+La base `TechCare` es **obligatoria**: tu usuario solo existe dentro de esa base. Sin ella, el error es *Login failed* (18456).
+
+En *Object Explorer* ahora tienes dos servidores: `localhost` (tu base local) y `techcare-grupo-bhl…` (Azure). Para trabajar en uno, haz **clic derecho en su base → New Query**. La barra de estado de abajo de cada pestaña muestra el servidor y el usuario: **revísala siempre antes de ejecutar**.
 
 La primera conexión del día puede tardar hasta un minuto o fallar con el error **40613**: la base estaba en pausa para ahorrar crédito. Reintenta a los 60 segundos.
 
@@ -213,7 +229,7 @@ Reglas de escritura:
 
 - Vistas, funciones, SP y triggers **siempre** con `CREATE OR ALTER` (se pueden re-ejecutar).
 - Errores con `THROW` en tu rango: **502xx** órdenes (B) · **503xx** facturación (A).
-- Nada se crea "a mano" en SSMS o DBeaver sin que esté en tu archivo y en git.
+- Nada se crea "a mano" en SSMS sin que esté en tu archivo y en git.
 - No edites nada dentro de `database/build/`: se regenera solo.
 
 ---
@@ -253,7 +269,9 @@ Qué significa cada opción (no las quites):
 | `-C` | Confía en el certificado de tu SQL local (solo local, nunca en Azure) |
 | `-d` | La base destino |
 
-Para probar, usa una transacción que se deshace sola:
+**También puedes ejecutarlo desde SSMS:** *File → Open → File…* → elige tu `.sql` → en el selector de bases de arriba elige tu base local → **F5**. SSMS ya trae `QUOTED_IDENTIFIER` activado y entiende los `GO`. Para Azure, en cambio, despliega siempre con sqlcmd desde `main` (Paso 8.4), así queda exactamente el archivo del repo.
+
+Para probar, abre una pestaña nueva en tu base local (clic derecho → *New Query*) y usa una transacción que se deshace sola:
 
 ```sql
 BEGIN TRAN;
@@ -320,10 +338,10 @@ Las cadenas de conexión van **solo** en `user-secrets`, nunca en `appsettings.j
 
 ## Paso 10 · Reglas del equipo
 
-- **Cierra la conexión a Azure al terminar** (SSMS: desconectar; DBeaver: clic derecho → *Disconnect*; detén el backend). Una conexión abierta mantiene la base encendida y gasta crédito.
+- **Cierra la conexión a Azure al terminar**: en SSMS, clic derecho en el servidor de Azure → **Disconnect**, y cierra las pestañas de consulta que apunten a Azure (cada pestaña es una conexión abierta). Detén también el backend. Una conexión abierta mantiene la base encendida y gasta crédito.
 - Contraseñas solo por mensaje privado. Si crees que se filtró una, avísale a C para cambiarla.
 - Nada de datos a mano en Azure: los datos de prueba salen de los scripts `80`–`85`.
-- Antes de ejecutar algo, revisa **a qué conexión** estás apuntando (local o Azure). En DBeaver aparece en el nombre de la pestaña.
+- Antes de ejecutar algo, revisa **a qué conexión** estás apuntando (local o Azure): en SSMS aparece en la barra amarilla/gris de abajo de cada pestaña y en el selector de base de arriba.
 
 ---
 
