@@ -1,0 +1,17 @@
+# .NET
+bin/
+obj/
+*.user
+appsettings.Development.json
+publish/
+*.zip
+# Node / Nuxt
+node_modules/
+.nuxt/
+.output/
+.env
+# BD
+database/build/
+infra/
+*.bak
+*.bacpac
