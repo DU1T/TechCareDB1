@@ -1,0 +1,118 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/*
+  Regla 60-30-10, pensada para un taller de servicio técnico.
+
+  60 %  bruma   neutro gris verdoso: fondo de página, tarjetas blancas, bordes y texto
+  30 %  placa   verde de placa electrónica: menú lateral, panel del login y color primario
+  10 %  acento  amarillo de multímetro: la acción principal, el ítem activo del menú y la etiqueta
+
+  Para cambiar la identidad de todo el sistema basta con editar estas tres escalas.
+  El amarillo nunca se usa como texto sobre fondo claro (no se lee): solo como relleno.
+*/
+@theme static {
+  /* Tipografía del sistema: cero descargas, funciona sin internet en la demo */
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+
+  /* 60 % neutro */
+  --color-bruma-50: #f6f8f6;
+  --color-bruma-100: #eef1ee;
+  --color-bruma-200: #dde3df;
+  --color-bruma-300: #c3ccc7;
+  --color-bruma-400: #94a29b;
+  --color-bruma-500: #6a7a73;
+  --color-bruma-600: #4f5e58;
+  --color-bruma-700: #3c4a45;
+  --color-bruma-800: #24332e;
+  --color-bruma-900: #14231f;
+  --color-bruma-950: #0d1815;
+
+  /* 30 % marca */
+  --color-placa-50: #e9f3f0;
+  --color-placa-100: #cfe5df;
+  --color-placa-200: #a2cbc1;
+  --color-placa-300: #6fab9d;
+  --color-placa-400: #3f887a;
+  --color-placa-500: #256b5e;
+  --color-placa-600: #1b5348;
+  --color-placa-700: #143d36;
+  --color-placa-800: #0f2f2a;
+  --color-placa-900: #0d2b26;
+  --color-placa-950: #071a17;
+
+  /* 10 % acento */
+  --color-acento-50: #fffbe6;
+  --color-acento-100: #fff4bf;
+  --color-acento-200: #ffe98a;
+  --color-acento-300: #ffd84d;
+  --color-acento-400: #ffcb26;
+  --color-acento-500: #ffc20e;
+  --color-acento-600: #e0a400;
+  --color-acento-700: #b88100;
+  --color-acento-800: #8f6200;
+  --color-acento-900: #6b4a00;
+  --color-acento-950: #3d2a00;
+}
+
+:root {
+  --ui-radius: 0.5rem;
+}
+
+body {
+  background: var(--color-bruma-100);
+  color: var(--color-bruma-900);
+}
+
+/* Cifras alineadas en tablas y montos */
+table,
+.cifras {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Texto oscuro sobre el amarillo: el blanco no se lee sobre este color */
+:is(button, a).bg-secondary {
+  color: var(--color-bruma-950);
+}
+
+/* Foco visible: verde oscuro sobre fondo claro, amarillo sobre el menú oscuro */
+:focus-visible {
+  outline-color: var(--color-placa-700) !important;
+}
+.menu-oscuro :focus-visible {
+  outline-color: var(--color-acento-400) !important;
+}
+
+/* Etiqueta del login: entra una sola vez al cargar la página */
+@keyframes etiqueta-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) rotate(-5deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(-2deg);
+  }
+}
+.etiqueta-servicio {
+  transform: rotate(-2deg);
+  animation: etiqueta-entra 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .etiqueta-servicio {
+    animation: none;
+  }
+}
+
+/* Código de barras decorativo de la etiqueta */
+.codigo-barras {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-placa-900) 0 2px,
+    transparent 2px 5px,
+    var(--color-placa-900) 5px 6px,
+    transparent 6px 9px,
+    var(--color-placa-900) 9px 12px,
+    transparent 12px 14px
+  );
+}

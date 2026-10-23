@@ -1,0 +1,19 @@
+# Nuxt
+.nuxt
+.output
+.data
+dist
+
+# Dependencias
+node_modules
+
+# Variables locales (nunca van a git)
+.env
+.env.*
+!.env.example
+
+# Editor y sistema
+.vscode
+.idea
+.DS_Store
+*.log
