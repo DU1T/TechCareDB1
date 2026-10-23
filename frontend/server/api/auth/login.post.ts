@@ -25,7 +25,14 @@ const USUARIOS: Record<string, { idUsuario: number; nombreCompleto: string; rol:
 }
 
 export default defineEventHandler(async (event) => {
-  const { username, password } = await readBody<{ username?: string; password?: string }>(event)
+  requerirSimulado(event)
+  // POST sin cuerpo (o con algo que no es un objeto) es un error del cliente, no un 500
+  const body = await readBody<{ username?: string; password?: string }>(event).catch(() => null)
+  if (!body || typeof body !== 'object') {
+    setResponseStatus(event, 400)
+    return { error: 'Escribe usuario y contraseña.' }
+  }
+  const { username, password } = body
   await new Promise((r) => setTimeout(r, 250)) // se nota el estado "cargando", como con una red real
 
   const u = USUARIOS[String(username ?? '').trim().toLowerCase()]

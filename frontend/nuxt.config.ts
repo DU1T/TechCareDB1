@@ -41,6 +41,9 @@ export default defineNuxtConfig({
       // '/api' = API simulada que vive en server/api (sin depender del backend).
       // Cuando B publique la API real, pon en .env: NUXT_PUBLIC_API_BASE=http://localhost:5080/api
       apiBase: '/api',
+      // Muestra los atajos de rol y activa la API simulada. Por defecto solo en desarrollo;
+      // un build de producción la trae apagada salvo que se pida: NUXT_PUBLIC_MODO_SIMULADO=true
+      modoSimulado: process.env.NODE_ENV !== 'production',
     },
   },
 

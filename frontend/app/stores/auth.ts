@@ -5,6 +5,16 @@ type Usuario = {
   permisos: string[]
 }
 
+// Lo que llegue de la API (o de sessionStorage) se normaliza: roles y permisos siempre son arreglos
+function normalizar(u: Partial<Usuario> | null | undefined): Usuario {
+  return {
+    idUsuario: Number(u?.idUsuario ?? 0),
+    nombreCompleto: String(u?.nombreCompleto ?? ''),
+    roles: Array.isArray(u?.roles) ? u.roles : [],
+    permisos: Array.isArray(u?.permisos) ? u.permisos : [],
+  }
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: null as string | null,
@@ -14,7 +24,7 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     // auth.puede('PAGO_REGISTRAR'): sirve para mostrar u ocultar menús y botones.
     // Es comodidad visual; la seguridad real está en la API y en la base de datos.
-    puede: (s) => (permiso: string) => s.usuario?.permisos.includes(permiso) ?? false,
+    puede: (s) => (permiso: string) => s.usuario?.permisos?.includes(permiso) ?? false,
   },
 
   actions: {
@@ -25,10 +35,12 @@ export const useAuthStore = defineStore('auth', {
         method: 'POST',
         body: { username, password },
       })
+      if (!r?.token) throw new Error('RESPUESTA_INVALIDA')
+      const usuario = normalizar(r.usuario)
       this.token = r.token
-      this.usuario = r.usuario
+      this.usuario = usuario
       try {
-        sessionStorage.setItem('tc_sesion', JSON.stringify(r))
+        sessionStorage.setItem('tc_sesion', JSON.stringify({ token: r.token, usuario }))
       } catch {
         /* modo privado: la sesión vive solo en memoria */
       }
@@ -39,8 +51,10 @@ export const useAuthStore = defineStore('auth', {
         const s = sessionStorage.getItem('tc_sesion')
         if (s) {
           const r = JSON.parse(s)
-          this.token = r.token
-          this.usuario = r.usuario
+          if (r?.token) {
+            this.token = r.token
+            this.usuario = normalizar(r.usuario)
+          }
         }
       } catch {
         /* sin almacenamiento: se pide login */

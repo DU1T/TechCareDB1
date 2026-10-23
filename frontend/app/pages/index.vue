@@ -1,5 +1,7 @@
 <script setup lang="ts">
-definePageMeta({ titulo: 'Inicio', permiso: 'REPORTE_VER' })
+// Inicio es para cualquier usuario con sesión: es el destino al que el middleware manda
+// a quien no tiene permiso, así que NO debe pedir uno (si no, se forma un bucle).
+definePageMeta({ titulo: 'Inicio' })
 
 const auth = useAuthStore()
 

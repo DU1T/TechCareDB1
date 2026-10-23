@@ -27,7 +27,7 @@ export const useApi = () => {
       const mensaje =
         response.status === 403
           ? 'Tu rol no tiene permiso para esta acción.'
-          : (response._data?.error ?? 'Ocurrió un error inesperado. Intenta de nuevo.')
+          : (typeof response._data?.error === 'string' ? response._data.error : 'Ocurrió un error inesperado. Intenta de nuevo.')
 
       toast.add({ title: 'No se pudo completar', description: mensaje, color: 'error' })
     },

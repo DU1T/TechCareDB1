@@ -21,7 +21,6 @@ export const MENU: ItemMenu[] = [
     ruta: '/',
     icono: 'i-lucide-layout-dashboard',
     grupo: 'General',
-    permiso: 'REPORTE_VER',
     listo: true,
   },
   {

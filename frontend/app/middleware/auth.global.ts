@@ -14,5 +14,6 @@ export default defineNuxtRouteMiddleware((to) => {
   if (!auth.token) return navigateTo('/login')
 
   const permiso = to.meta.permiso as string | undefined
-  if (permiso && !auth.puede(permiso)) return navigateTo('/')
+  // Nunca redirigir a '/' estando ya en '/': evita un bucle infinito
+  if (permiso && !auth.puede(permiso) && to.path !== '/') return navigateTo('/')
 })

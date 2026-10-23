@@ -6,7 +6,7 @@ useHead({ title: 'Iniciar sesión · TechCare' })
 
 const auth = useAuthStore()
 const config = useRuntimeConfig()
-const modoSimulado = computed(() => String(config.public.apiBase).startsWith('/'))
+const modoSimulado = computed(() => config.public.modoSimulado === true)
 
 const schema = z.object({
   username: z.string().trim().min(1, 'Escribe tu usuario'),
@@ -39,9 +39,12 @@ async function entrar() {
     await auth.login(state.username.trim(), state.password)
     await navigateTo('/')
   } catch (e: any) {
+    // Solo es "sin conexión" si la petición no obtuvo respuesta; un fallo nuestro no se disfraza de red
     error.value = e?.response
-      ? (e.data?.error ?? 'No se pudo iniciar sesión.')
-      : 'No hay conexión con el servidor. Revisa que la API esté encendida.'
+      ? (typeof e.data?.error === 'string' ? e.data.error : 'No se pudo iniciar sesión.')
+      : e?.name === 'FetchError'
+        ? 'No hay conexión con el servidor. Revisa que la API esté encendida.'
+        : 'La respuesta del servidor no tiene el formato esperado.'
   } finally {
     cargando.value = false
   }

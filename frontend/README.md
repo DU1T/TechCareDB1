@@ -15,7 +15,7 @@ Requiere Node 22.22.3 o superior (o 24.15+).
 
 ## Modo simulado y API real
 
-Con `NUXT_PUBLIC_API_BASE=/api` (valor por defecto) la app usa la API falsa de `server/api`, que tiene la misma forma que la real. Verás la etiqueta **API simulada** arriba a la derecha.
+Con `NUXT_PUBLIC_API_BASE=/api` (valor por defecto) la app usa la API falsa de `server/api`, que tiene la misma forma que la real. Verás la etiqueta **API simulada** arriba a la derecha. La API simulada y los atajos de rol del login solo están activos en desarrollo (`npm run dev`); en un build de producción están apagados (los endpoints de `server/api` responden 404) salvo que se defina `NUXT_PUBLIC_MODO_SIMULADO=true`.
 
 Cuando B publique la suya, cambia en `.env`:
 

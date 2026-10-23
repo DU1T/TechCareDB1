@@ -6,7 +6,7 @@ const route = useRoute()
 const config = useRuntimeConfig()
 
 const menuAbierto = ref(false)
-const modoSimulado = computed(() => String(config.public.apiBase).startsWith('/'))
+const modoSimulado = computed(() => config.public.modoSimulado === true)
 watch(() => route.fullPath, () => { menuAbierto.value = false })
 
 // Solo se muestran los ítems que el rol puede usar, agrupados
@@ -39,8 +39,8 @@ const titulo = computed(() => String(route.meta.titulo ?? 'TechCare'))
     />
 
     <aside
-      class="menu-oscuro fixed inset-y-0 left-0 z-40 flex w-[17rem] flex-col bg-placa-900 text-placa-100 transition-transform duration-200 motion-reduce:transition-none lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0"
-      :class="menuAbierto ? 'translate-x-0' : '-translate-x-full'"
+      class="menu-oscuro fixed inset-y-0 left-0 z-40 flex w-[17rem] flex-col bg-placa-900 text-placa-100 transition-[transform,visibility] duration-200 motion-reduce:transition-none lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0"
+      :class="menuAbierto ? 'translate-x-0' : '-translate-x-full invisible lg:visible'"
       aria-label="Menú principal"
     >
       <div class="flex h-14 items-center gap-2.5 px-5">
