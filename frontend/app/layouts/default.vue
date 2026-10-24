@@ -9,6 +9,13 @@ const menuAbierto = ref(false)
 const modoSimulado = computed(() => config.public.modoSimulado === true)
 watch(() => route.fullPath, () => { menuAbierto.value = false })
 
+// Escape cierra el menú móvil, aunque el foco esté fuera del menú (por eso se escucha en la ventana)
+function alEscape(e: KeyboardEvent) {
+  if (e.key === 'Escape') menuAbierto.value = false
+}
+onMounted(() => window.addEventListener('keydown', alEscape))
+onBeforeUnmount(() => window.removeEventListener('keydown', alEscape))
+
 // Solo se muestran los ítems que el rol puede usar, agrupados
 const grupos = computed(() => {
   const mapa = new Map<string, ItemMenu[]>()
