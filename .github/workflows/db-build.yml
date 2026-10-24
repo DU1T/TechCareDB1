@@ -1,14 +1,17 @@
 # Verifica en cada push / PR que el script maestro y los datos de prueba
 # se ejecutan sin errores en un SQL Server 2022 limpio.
-# Si este check falla, el PR NO se mezcla (activar "Require status checks" en la rama main).
+# Si este check falla, el PR NO se mezcla (el ruleset de master exige el check "sql").
+#
+# El workflow corre en TODOS los PR (sin filtro "paths"): el ruleset espera el check
+# "sql" en cada PR, y con filtro un PR que no toca database/ (p. ej. solo frontend)
+# nunca lo reportaba y quedaba bloqueado. Si el PR no cambia database/ ni este
+# archivo, el job termina en verde sin levantar SQL Server.
 name: db-build
 
 on:
   push:
-    branches: [main]
-    paths: ['database/**', '.github/workflows/db-build.yml']
+    branches: [master]
   pull_request:
-    paths: ['database/**', '.github/workflows/db-build.yml']
 
 jobs:
   sql:
@@ -18,8 +21,27 @@ jobs:
       SQLCMD: /opt/mssql-tools18/bin/sqlcmd
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0                     # historial completo para comparar con la base del PR
+
+      - name: ¿Cambió la base de datos?
+        id: cambios
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # Si no hay base con qué comparar (rama nueva), se prueba todo por seguridad
+          if ! archivos=$(git diff --name-only "$BASE" HEAD 2>/dev/null); then
+            echo "db=true" >> "$GITHUB_OUTPUT"; echo "Sin base para comparar: se ejecuta la prueba completa."; exit 0
+          fi
+          if echo "$archivos" | grep -qE '^(database/|\.github/workflows/db-build\.yml$)'; then
+            echo "db=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "db=false" >> "$GITHUB_OUTPUT"
+            echo "Este cambio no toca database/: se omite la prueba de SQL Server."
+          fi
 
       - name: Levantar SQL Server 2022
+        if: steps.cambios.outputs.db == 'true'
         run: |
           docker run -d --name sql -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD="$SA_PASSWORD" \
             -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
@@ -30,20 +52,24 @@ jobs:
           echo "SQL Server no arrancó"; docker logs sql; exit 1
 
       - name: Generar scripts
+        if: steps.cambios.outputs.db == 'true'
         run: bash database/build_master.sh
 
       # -I: QUOTED_IDENTIFIER ON (sqlcmd lo deja en OFF y fallan índices filtrados)
       - name: Ejecutar master
+        if: steps.cambios.outputs.db == 'true'
         run: |
           docker cp database/build/TechCare_Master.sql sql:/tmp/master.sql
           docker exec sql $SQLCMD -S localhost -U sa -P "$SA_PASSWORD" -C -b -I -f 65001 -i /tmp/master.sql
 
       - name: Ejecutar datos de prueba
+        if: steps.cambios.outputs.db == 'true'
         run: |
           docker cp database/build/TechCare_DatosPrueba.sql sql:/tmp/datos.sql
           docker exec sql $SQLCMD -S localhost -U sa -P "$SA_PASSWORD" -C -b -I -f 65001 -d TechCare -i /tmp/datos.sql
 
       - name: Resumen de objetos creados
+        if: steps.cambios.outputs.db == 'true'
         run: |
           docker exec sql $SQLCMD -S localhost -U sa -P "$SA_PASSWORD" -C -d TechCare -W -Q "
             SELECT type_desc AS tipo, COUNT(*) AS cantidad
