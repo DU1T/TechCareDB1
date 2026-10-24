@@ -9,6 +9,13 @@ const menuAbierto = ref(false)
 const modoSimulado = computed(() => config.public.modoSimulado === true)
 watch(() => route.fullPath, () => { menuAbierto.value = false })
 
+// Escape cierra el menú móvil, aunque el foco esté fuera del menú (por eso se escucha en la ventana)
+function alEscape(e: KeyboardEvent) {
+  if (e.key === 'Escape') menuAbierto.value = false
+}
+onMounted(() => window.addEventListener('keydown', alEscape))
+onBeforeUnmount(() => window.removeEventListener('keydown', alEscape))
+
 // Solo se muestran los ítems que el rol puede usar, agrupados
 const grupos = computed(() => {
   const mapa = new Map<string, ItemMenu[]>()
@@ -30,10 +37,7 @@ const titulo = computed(() => String(route.meta.titulo ?? 'TechCare'))
 </script>
 
 <template>
-  <div
-    class="min-h-dvh lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]"
-    @keydown.esc="menuAbierto = false"
-  >
+  <div class="min-h-dvh lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
     <div
       v-if="menuAbierto"
       class="fixed inset-0 z-30 bg-placa-950/60 lg:hidden"
