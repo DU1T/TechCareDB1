@@ -177,22 +177,121 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE dbo.sp_RegistrarCompra
+    @idProveedor     INT,
+    @idBodegaDestino INT,
+    @numeroDocumento VARCHAR(30),
+    @idUsuario       INT,
+    @detalle         dbo.TipoDetalleCompra READONLY,
+    @observaciones   NVARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    IF dbo.fn_UsuarioTieneRol(@idUsuario, 'BODEGA') = 0
+        THROW 50110, 'El usuario no tiene rol de bodega.', 1;
+    IF NULLIF(LTRIM(RTRIM(@numeroDocumento)), '') IS NULL
+        THROW 50114, 'Indique el número de documento del proveedor.', 1;
+    IF NOT EXISTS (SELECT 1 FROM @detalle)
+        THROW 50115, 'La compra debe tener al menos una línea.', 1;
+    IF NOT EXISTS (SELECT 1 FROM dbo.Proveedor WHERE idProveedor = @idProveedor AND estado = 'ACTIVO')
+        THROW 50116, 'El proveedor no existe o está inactivo.', 1;
+    IF NOT EXISTS (SELECT 1 FROM dbo.Bodega WHERE idBodega = @idBodegaDestino AND estado = 'ACTIVA')
+        THROW 50117, 'La bodega no existe o está inactiva.', 1;
+    IF EXISTS (SELECT 1
+               FROM @detalle d
+               LEFT JOIN dbo.Repuesto r ON r.idRepuesto = d.idRepuesto
+               WHERE r.idRepuesto IS NULL OR r.estado <> 'ACTIVO')
+        THROW 50118, 'La compra incluye repuestos inexistentes o inactivos.', 1;
+    IF EXISTS (SELECT 1 FROM dbo.Compra WHERE idProveedor = @idProveedor AND numeroDocumento = @numeroDocumento)
+        THROW 50119, 'Ese documento del proveedor ya fue registrado.', 1;   -- UQ_Compra_ProveedorDocumento lo respalda
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        INSERT INTO dbo.Compra (idProveedor, idBodegaDestino, numeroDocumento, idUsuarioRegistro, observaciones)
+        VALUES (@idProveedor, @idBodegaDestino, @numeroDocumento, @idUsuario, @observaciones);
+
+        DECLARE @idCompra INT = CAST(SCOPE_IDENTITY() AS INT);
+
+        -- Costo HISTÓRICO por línea (R09): no se lee del catálogo, se guarda el de esta compra
+        INSERT INTO dbo.DetalleCompra (idCompra, idRepuesto, cantidad, costoUnitario)
+        SELECT @idCompra, d.idRepuesto, d.cantidad, d.costoUnitario
+        FROM @detalle d;
+
+        COMMIT TRANSACTION;
+
+        SELECT @idCompra AS idCompra;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_AjusteInventario
+    @idBodega   INT,
+    @idRepuesto INT,
+    @cantidad   INT,            -- positiva suma, negativa resta
+    @idUsuario  INT,
+    @motivo     NVARCHAR(250)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    IF dbo.fn_UsuarioTieneRol(@idUsuario, 'BODEGA') = 0
+        THROW 50110, 'El usuario no tiene rol de bodega.', 1;
+    IF @cantidad IS NULL OR @cantidad = 0
+        THROW 50120, 'La cantidad del ajuste no puede ser cero.', 1;
+    IF NULLIF(LTRIM(RTRIM(@motivo)), N'') IS NULL
+        THROW 50121, 'El ajuste requiere un motivo.', 1;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @existencia INT, @costo DECIMAL(12,2);
+
+        SELECT @existencia = i.existencia, @costo = r.precioCompraRef
+        FROM dbo.Inventario i WITH (UPDLOCK, HOLDLOCK)
+        INNER JOIN dbo.Repuesto r ON r.idRepuesto = i.idRepuesto
+        WHERE i.idBodega = @idBodega AND i.idRepuesto = @idRepuesto;
+
+        IF @existencia IS NULL
+            THROW 50104, 'El repuesto no está registrado en la bodega seleccionada (R06).', 1;
+        IF @existencia + @cantidad < 0
+            THROW 50122, 'El ajuste dejaría la existencia negativa (R10).', 1;
+
+        UPDATE dbo.Inventario
+           SET existencia = existencia + @cantidad, fechaUltimoMovimiento = SYSDATETIME()
+         WHERE idBodega = @idBodega AND idRepuesto = @idRepuesto;
+
+        INSERT INTO dbo.MovimientoInventario
+            (idBodega, idRepuesto, tipo, origen, cantidad, existenciaAnterior, existenciaResultante,
+             costoUnitario, idUsuario, observacion)
+        VALUES
+            (@idBodega, @idRepuesto, CASE WHEN @cantidad > 0 THEN 'ENTRADA' ELSE 'SALIDA' END, 'AJUSTE',
+             ABS(@cantidad), @existencia, @existencia + @cantidad, @costo, @idUsuario, @motivo);
+
+        DECLARE @idMovimiento BIGINT = CAST(SCOPE_IDENTITY() AS BIGINT);
+
+        COMMIT TRANSACTION;
+
+        SELECT @idMovimiento AS idMovimiento, @existencia + @cantidad AS existenciaResultante;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+
 /* ---------------------------------------------------------------------
-   TODO (Fullstack/Infra) — contratos en el plan, sección 7:
+   TODO (Fullstack/Infra, opcional):
 
-   dbo.sp_RegistrarCompra
-       @idProveedor INT, @idBodegaDestino INT, @numeroDocumento VARCHAR(30),
-       @idUsuario INT, @detalle dbo.TipoDetalleCompra READONLY, @observaciones NVARCHAR(300) = NULL
-     -> valida proveedor/bodega activos, rol BODEGA, detalle no vacío, repuestos activos
-     -> INSERT Compra (PENDIENTE) + DetalleCompra en una transacción
-     -> devuelve SELECT @idCompra AS idCompra
-
-   dbo.sp_RecibirCompra -> HECHO arriba (modelo).
-
-   dbo.sp_AjusteInventario  @idBodega, @idRepuesto, @cantidad INT (+/-), @idUsuario, @motivo
-     -> conteo físico / corrección; movimiento origen AJUSTE con observación obligatoria
-
-   dbo.sp_DevolverRepuesto  @idDetalleRepuesto, @idUsuario, @motivo     (opcional, R14)
+   dbo.sp_DevolverRepuesto  @idDetalleRepuesto, @idUsuario, @motivo     (R14)
      -> marca DetalleRepuesto como DEVUELTO, regresa stock, movimiento DEVOLUCION
    --------------------------------------------------------------------- */
 
