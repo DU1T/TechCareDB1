@@ -1,11 +1,11 @@
 # Verifica en cada push / PR que el script maestro y los datos de prueba
 # se ejecutan sin errores en un SQL Server 2022 limpio.
-# Si este check falla, el PR NO se mezcla (activar "Require status checks" en la rama main).
+# Si este check falla, el PR NO se mezcla (activar "Require status checks" en la rama master).
 name: db-build
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths: ['database/**', '.github/workflows/db-build.yml']
   pull_request:
     paths: ['database/**', '.github/workflows/db-build.yml']
