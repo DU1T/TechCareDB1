@@ -129,7 +129,6 @@ builder.Services
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero
             };
-            
             options.Events = new JwtBearerEvents
             {
                 OnChallenge = async context =>

@@ -1,4 +1,4 @@
-//Este middleware hará que los errores de los procedimientos almacenados se traduzcan a respuestas HTTP 
+//Este middleware hará que los errores de los procedimientos almacenados se traduzcan a respuestas HTTP
 // que mostrar en la interfaz
 using Microsoft.Data.SqlClient;
 
