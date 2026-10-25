@@ -59,10 +59,12 @@ builder.Services.AddControllers()
                 error = mensaje
             });
         };
-    });
+});
 
 
 builder.Services.AddSingleton<SqlConnectionFactory>();
+builder.Services.AddScoped<OrdenesRepository>();
+
 builder.Services.AddSingleton<PasswordService>();
 builder.Services.AddSingleton<TokenService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

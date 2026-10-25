@@ -82,10 +82,158 @@ BEGIN
 END;
 GO
 
+-- ============================================================
+-- sp_RegistrarDiagnostico
+-- Registra el diagnostico tecnico de una orden de servicio.
+-- ============================================================
+
+CREATE OR ALTER PROCEDURE dbo.sp_RegistrarDiagnostico
+    @idOrden INT,
+    @idTecnico INT,
+    @descripcion NVARCHAR(1000),
+    @costoManoObraEstimado DECIMAL(12,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    -- 1. Validar los parametros recibidos
+    IF @idOrden IS NULL OR @idOrden <= 0
+        THROW 50210, 'El identificador de la orden no es valido.', 1;
+
+    IF @idTecnico IS NULL OR @idTecnico <= 0
+        THROW 50211, 'El identificador del tecnico no es valido.', 1;
+
+    IF NULLIF(LTRIM(RTRIM(@descripcion)), N'') IS NULL
+        THROW 50212, 'Debe ingresar una descripcion del diagnostico.', 1;
+
+    IF @costoManoObraEstimado IS NULL
+       OR @costoManoObraEstimado < 0
+        THROW 50213, 'El costo estimado debe ser mayor o igual a cero.', 1;
+
+    -- 2. Validar que el usuario tenga rol TECNICO
+    IF ISNULL(dbo.fn_UsuarioTieneRol(@idTecnico, 'TECNICO'), 0) = 0
+        THROW 50214, 'El usuario no tiene rol TECNICO.', 1;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @estadoActual VARCHAR(25);
+        DECLARE @idDiagnostico INT;
+
+        -- 3. Consultar y bloquear la orden
+        SELECT @estadoActual = estado
+        FROM dbo.OrdenServicio WITH (UPDLOCK, HOLDLOCK)
+        WHERE idOrden = @idOrden;
+
+        IF @estadoActual IS NULL
+            THROW 50215, 'La orden de servicio no existe.', 1;
+
+        -- Solo se admiten estos dos estados
+        IF @estadoActual NOT IN ('RECIBIDO', 'DIAGNOSTICO')
+            THROW 50216, 'La orden no permite registrar un diagnostico.', 1;
+
+        -- 4. Evitar diagnosticos duplicados
+        IF EXISTS (
+            SELECT 1
+            FROM dbo.Diagnostico
+            WHERE idOrden = @idOrden
+        )
+            THROW 50217, 'La orden ya tiene un diagnostico registrado.', 1;
+
+        -- 5. Insertar el diagnostico
+        INSERT INTO dbo.Diagnostico (
+            idOrden,
+            idTecnico,
+            descripcion,
+            costoManoObraEstimado
+        )
+        VALUES (
+            @idOrden,
+            @idTecnico,
+            @descripcion,
+            @costoManoObraEstimado
+        );
+
+        SET @idDiagnostico = CAST(SCOPE_IDENTITY() AS INT);
+
+        -- 6. Asignar el tecnico si todavia no existe asignacion
+        UPDATE dbo.OrdenServicio
+        SET idTecnicoAsignado = @idTecnico
+        WHERE idOrden = @idOrden
+          AND idTecnicoAsignado IS NULL;
+
+        -- 7. Pasar de RECIBIDO a DIAGNOSTICO cuando corresponda
+        IF @estadoActual = 'RECIBIDO'
+        BEGIN
+            EXEC dbo.sp_EstablecerContexto
+                @idUsuario = @idTecnico,
+                @observacion = N'Inicio del diagnostico tecnico';
+
+            UPDATE dbo.OrdenServicio
+            SET estado = 'DIAGNOSTICO'
+            WHERE idOrden = @idOrden
+              AND estado = 'RECIBIDO';
+
+            IF @@ROWCOUNT <> 1
+                THROW 50218, 'No se pudo iniciar el diagnostico.', 1;
+        END;
+
+        -- 8. Pasar a ESPERANDO_AUTORIZACION
+        EXEC dbo.sp_EstablecerContexto
+            @idUsuario = @idTecnico,
+            @observacion = N'Diagnostico registrado; pendiente de autorizacion';
+
+        UPDATE dbo.OrdenServicio
+        SET estado = 'ESPERANDO_AUTORIZACION'
+        WHERE idOrden = @idOrden
+          AND estado = 'DIAGNOSTICO';
+
+        IF @@ROWCOUNT <> 1
+            THROW 50219, 'No se pudo actualizar el estado final.', 1;
+
+        -- 9. Confirmar todos los cambios
+        COMMIT TRANSACTION;
+
+        -- Limpiar el contexto de la sesion
+        EXEC dbo.sp_EstablecerContexto
+            @idUsuario = NULL,
+            @observacion = NULL;
+
+        -- 10. Devolver el resultado
+        SELECT
+            @idDiagnostico AS idDiagnostico,
+            @idOrden AS idOrden,
+            'ESPERANDO_AUTORIZACION' AS estado,
+            N'Diagnostico registrado correctamente' AS mensaje;
+
+    END TRY
+    BEGIN CATCH
+        -- Revertir todo si ocurre un error
+        IF XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+
+        EXEC dbo.sp_EstablecerContexto
+            @idUsuario = NULL,
+            @observacion = NULL;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+
+
+
+
+
+
+
+
 /* ---------------------------------------------------------------------
    HECHO dbo.sp_RegistrarOrdenServicio (arriba, modelo).
 
-   TODO dbo.sp_RegistrarDiagnostico                          (T03)
+   HECHO dbo.sp_RegistrarDiagnostico                          (T03)
        @idOrden, @idTecnico, @descripcion NVARCHAR(1000), @costoManoObraEstimado DECIMAL(12,2)
      -> rol TECNICO; orden en RECIBIDO o DIAGNOSTICO; sin diagnóstico previo
      -> INSERT Diagnostico; asigna idTecnicoAsignado si está NULL
