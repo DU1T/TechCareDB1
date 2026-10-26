@@ -2,22 +2,23 @@
 
 ## Reconstruir una base en un paso
 ```powershell
-./reconstruir.ps1 -Servidor vm-techcare,1433 -Usuario dev_back -Db TechCare_Back     # su base personal
-./reconstruir.ps1 -Servidor vm-techcare,1433 -Usuario dev_infra                      # compartida: SOLO C, avisando antes
-./reconstruir.ps1 -Servidor tcp:SERVIDOR.database.windows.net,1433 -Usuario techcare_admin -Azure
+./reconstruir.ps1 -Servidor localhost -Integrada -Base TechCare_Back                      # A y B (Windows)
+./reconstruir.ps1 -Servidor "localhost,1434" -Usuario sa -Base TechCare_Infra            # C (Docker)
+./reconstruir.ps1 -Servidor "tcp:techcare-grupo-bhl.database.windows.net,1433" -Usuario tcadmin -Azure   # compartida: SOLO C, avisando antes
 ```
-macOS/Linux: `./reconstruir.sh -s vm-techcare,1433 -u dev_front -d TechCare_Front` (agregar `--azure` para Azure).
+macOS/Linux: `./reconstruir.sh -s "localhost,1434" -u sa -d TechCare_Infra` (agregar `--azure` para Azure).
 
 Hace: build → master → datos de prueba → seguridad (solo compartida/Azure) → auditoría DDL.
-Local con autenticación de Windows: `./reconstruir.ps1 -Servidor localhost -Integrada -Db TechCare_Back`.
-Usuarios de Azure (una sola vez): `./crear_usuarios_azure.ps1 -Servidor tcp:SERVIDOR.database.windows.net,1433`.
+El parámetro es `-Base`, no `-Db`: `-Db` choca con el alias de `-Debug` en PowerShell.
+Usuarios de Azure (una sola vez): `./crear_usuarios_azure.ps1 -Servidor tcp:techcare-grupo-bhl.database.windows.net,1433`.
 
 ## Desplegar solo su archivo (SP, vistas, funciones, triggers)
 ```powershell
-sqlcmd -S vm-techcare,1433 -U dev_back -P '***' -C -b -f 65001 -d TechCare_Back -i 41_sp_ordenes.sql
+sqlcmd -S localhost -E -C -b -I -f 65001 -d TechCare_Back -i 41_sp_ordenes.sql                                      # local
+sqlcmd -S tcp:techcare-grupo-bhl.database.windows.net,1433 -U dev_back -b -I -f 65001 -d TechCare -i 41_sp_ordenes.sql  # Azure, desde master
 ```
-Azure: quitar `-C` y usar `-S tcp:SERVIDOR.database.windows.net,1433`.
-`-b` detiene al primer error · `-f 65001` lee UTF-8 (tildes) · `-C` confía en el certificado del servidor · `-d` base destino.
+`-b` detiene al primer error · `-I` activa `QUOTED_IDENTIFIER` (sin él fallan los índices filtrados) · `-f 65001` lee UTF-8 (tildes) · `-C` confía en el certificado del servidor local (en Azure no va) · `-d` base destino.
+Con el sqlcmd nuevo (go-sqlcmd) se omite `-f 65001`: ya lee UTF-8.
 
 ## Solo generar los entregables
 ```bash
@@ -42,5 +43,3 @@ Windows: `./build_master.ps1 [-Db TechCare_Ana] [-Azure]`.
 - Códigos THROW: 500xx núcleo · 501xx inventario · 502xx órdenes · 503xx facturación · 510xx triggers.
 - SP de proceso devuelven el id creado en un SELECT final; en los scripts de datos se recupera por la llave de negocio.
 - `build/` no se edita ni se sube a git: se regenera.
-
-<!-- prueba CI -->

@@ -244,7 +244,7 @@ rama nueva → editar tu .sql → probar en tu base LOCAL → PR → db-build ve
 
 ```powershell
 cd C:\src\techcare
-git switch main
+git switch master
 git pull
 git switch -c b/sp-diagnostico        # B: b/<tarea> · A: a/<tarea>
 ```
@@ -269,7 +269,7 @@ Qué significa cada opción (no las quites):
 | `-C` | Confía en el certificado de tu SQL local (solo local, nunca en Azure) |
 | `-d` | La base destino |
 
-**También puedes ejecutarlo desde SSMS:** *File → Open → File…* → elige tu `.sql` → en el selector de bases de arriba elige tu base local → **F5**. SSMS ya trae `QUOTED_IDENTIFIER` activado y entiende los `GO`. Para Azure, en cambio, despliega siempre con sqlcmd desde `main` (Paso 8.4), así queda exactamente el archivo del repo.
+**También puedes ejecutarlo desde SSMS:** *File → Open → File…* → elige tu `.sql` → en el selector de bases de arriba elige tu base local → **F5**. SSMS ya trae `QUOTED_IDENTIFIER` activado y entiende los `GO`. Para Azure, en cambio, despliega siempre con sqlcmd desde `master` (Paso 8.4), así queda exactamente el archivo del repo.
 
 Para probar, abre una pestaña nueva en tu base local (clic derecho → *New Query*) y usa una transacción que se deshace sola:
 
@@ -299,11 +299,11 @@ En GitHub aparece el botón **Compare & pull request**: ábrelo, llena la planti
 
 ### 8.4 Merge y despliegue en Azure
 
-Después del merge, despliega **el archivo completo desde `main`**:
+Después del merge, despliega **el archivo completo desde `master`**:
 
 ```powershell
 cd C:\src\techcare
-git switch main
+git switch master
 git pull
 & "C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE" `
   -S "tcp:techcare-grupo-bhl.database.windows.net,1433" -d TechCare -U dev_back `

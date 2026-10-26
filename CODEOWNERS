@@ -1,10 +1,10 @@
-# Reemplazar @usuarioA/B/C por los usuarios reales de GitHub
-/database/0*            @usuarioA @usuarioB @usuarioC
-/database/10_*          @usuarioA @usuarioB @usuarioC
-/database/30_*          @usuarioA @usuarioB @usuarioC
-/database/40_*          @usuarioA @usuarioB @usuarioC
-/database/*ordenes*     @usuarioB
-/database/*inventario*  @usuarioC
-/database/*facturacion* @usuarioA
-/backend/               @usuarioB
-/frontend/              @usuarioA
+# A: BelDv28 (frontend) · B: Jers-0613 (backend) · C: DU1T (infra e inventario)
+/database/0*            @BelDv28 @Jers-0613 @DU1T
+/database/10_*          @BelDv28 @Jers-0613 @DU1T
+/database/30_*          @BelDv28 @Jers-0613 @DU1T
+/database/40_*          @BelDv28 @Jers-0613 @DU1T
+/database/*ordenes*     @Jers-0613
+/database/*inventario*  @DU1T
+/database/*facturacion* @BelDv28
+/backend/               @Jers-0613
+/frontend/              @BelDv28
