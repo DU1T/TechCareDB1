@@ -80,19 +80,48 @@ public sealed class OrdenesController : ControllerBase
         return Ok(resultado);
     }
 
+
     [HttpPost("{id:int}/autorizacion")]
     [Authorize(Policy = "ORDEN_CAMBIAR_ESTADO")]
-    public IActionResult Autorizacion(
+    public async Task<IActionResult> Autorizacion(
         int id,
         RegistrarAutorizacionDto dto)
-        => Pendiente();
+    {
+        if (id <= 0 || dto.Autorizado is null)
+        {
+            return BadRequest(new
+            {
+                error = "Debe indicar una orden valida y si el cliente autoriza."
+            });
+        }
+
+        var resultado = await _repo.AutorizarAsync(
+            id,
+            dto.Autorizado.Value,
+            User.IdUsuario());
+
+        return Ok(resultado);
+    }
 
     [HttpPost("{id:int}/reparacion")]
     [Authorize(Policy = "REPARACION_GESTIONAR")]
-    public IActionResult IniciarReparacion(
-        int id,
-        IniciarReparacionDto dto)
-        => Pendiente();
+    public async Task<IActionResult> IniciarReparacion(int id)
+    {
+        if (id <= 0)
+        {
+            return BadRequest(new
+            {
+                error = "El identificador de la orden no es valido."
+            });
+        }
+
+        var resultado = await _repo.IniciarReparacionAsync(
+            id,
+            User.IdUsuario());
+
+        return Ok(resultado);
+    }
+
 
     private ObjectResult Pendiente()
         => StatusCode(501, new

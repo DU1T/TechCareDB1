@@ -14,7 +14,7 @@ public record RegistrarDiagnosticoDto(
 );
 
 public record RegistrarAutorizacionDto(
-    bool Autorizado);
+    bool? Autorizado);
 
 public record IniciarReparacionDto();
 
