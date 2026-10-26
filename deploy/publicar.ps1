@@ -25,10 +25,11 @@ try {
     if (-not (Test-Path 'node_modules')) { npm ci; if ($LASTEXITCODE) { throw 'npm ci falló' } }
     $env:NUXT_PUBLIC_API_BASE = '/api'
     $env:NUXT_PUBLIC_MODO_SIMULADO = 'false'
+    $env:NUXT_TELEMETRY_DISABLED = '1'   # si no, la primera vez Nuxt pregunta por telemetría y se queda esperando
     npx nuxi generate
     if ($LASTEXITCODE) { throw 'nuxi generate falló' }
 } finally {
-    Remove-Item Env:NUXT_PUBLIC_API_BASE, Env:NUXT_PUBLIC_MODO_SIMULADO -ErrorAction SilentlyContinue
+    Remove-Item Env:NUXT_PUBLIC_API_BASE, Env:NUXT_PUBLIC_MODO_SIMULADO, Env:NUXT_TELEMETRY_DISABLED -ErrorAction SilentlyContinue
     Pop-Location
 }
 
