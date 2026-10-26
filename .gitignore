@@ -5,6 +5,8 @@ obj/
 appsettings.Development.json
 publish/
 *.zip
+# Web compilada que deploy/publicar.ps1 copia dentro de la API (se regenera)
+backend/TechCare.Api/wwwroot/
 # Node / Nuxt
 node_modules/
 .nuxt/

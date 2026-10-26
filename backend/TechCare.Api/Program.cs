@@ -220,11 +220,22 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Web de Nuxt servida por la misma API (una sola URL: sin CORS y el mismo
+// build sirve en Azure y en la demo en LAN). deploy/publicar.ps1 la copia a wwwroot.
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseCors("front");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Una ruta /api que no existe responde 404 en JSON; cualquier otra ruta
+// (/ordenes/15, /caja…) devuelve index.html para que la resuelva el SPA.
+app.Map("/api/{**resto}", () =>
+    Results.NotFound(new { error = "La ruta solicitada no existe." }));
+app.MapFallbackToFile("index.html");
 
 app.Run();
