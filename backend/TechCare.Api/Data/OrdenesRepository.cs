@@ -57,4 +57,77 @@ public sealed class OrdenesRepository
 
         return resultado;
     }
+
+    public async Task<object> AutorizarAsync(
+        int idOrden,
+        bool autorizado,
+        int idUsuario)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QuerySingleAsync(
+            "dbo.sp_RegistrarAutorizacionCliente",
+            new
+            {
+                idOrden,
+                autorizado,
+                idUsuario
+            },
+            commandType: CommandType.StoredProcedure);
+    }
+
+    public async Task<object> IniciarReparacionAsync(
+        int idOrden,
+        int idTecnico)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QuerySingleAsync(
+            "dbo.sp_IniciarReparacion",
+            new
+            {
+                idOrden,
+                idTecnico
+            },
+            commandType: CommandType.StoredProcedure);
+    }
+
+    public async Task<object> RegistrarActividadAsync(
+        int idReparacion,
+        int idTecnico,
+        RegistrarActividadDto dto)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QuerySingleAsync(
+            "dbo.sp_RegistrarActividad",
+            new
+            {
+                idReparacion,
+                idTecnico,
+                descripcion = dto.Descripcion,
+                horas = dto.Horas
+            },
+            commandType: CommandType.StoredProcedure);
+    }
+
+    public async Task<object> FinalizarReparacionAsync(
+        int idReparacion,
+        int idTecnico,
+        FinalizarReparacionDto dto)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QuerySingleAsync(
+            "dbo.sp_FinalizarReparacion",
+            new
+            {
+                idReparacion,
+                idTecnico,
+                descripcionTrabajo = dto.DescripcionTrabajo,
+                costoManoObra = dto.CostoManoObra
+            },
+            commandType: CommandType.StoredProcedure);
+    }
+
 }
