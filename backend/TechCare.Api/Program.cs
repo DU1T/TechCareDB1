@@ -64,6 +64,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddSingleton<SqlConnectionFactory>();
 builder.Services.AddScoped<OrdenesRepository>();
+builder.Services.AddScoped<InventarioRepository>();
 
 builder.Services.AddSingleton<PasswordService>();
 builder.Services.AddSingleton<TokenService>();
