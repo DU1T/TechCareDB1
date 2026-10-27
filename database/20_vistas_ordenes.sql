@@ -47,13 +47,59 @@ LEFT  JOIN dbo.Usuario tec    ON tec.idUsuario = o.idTecnicoAsignado
 WHERE eo.esFinal = 0;
 GO
 
-/* ---------------------------------------------------------------------
-   TODO (Backend):
-   - dbo.fn_HistorialEquipo(@numeroSerie)  -> función de tabla en línea (inline TVF)
-       una fila por orden del equipo: numeroOrden, fechaIngreso, estado, problema,
-       diagnóstico (LEFT JOIN), técnico, costo mano de obra, total factura (LEFT JOIN).
-       Base del reporte 3 y la prueba T11.
-   --------------------------------------------------------------------- */
+-- ============================================================
+-- PASO 116: fn_HistorialEquipo
+-- Historial tecnico de un equipo por numero de serie
+-- ============================================================
+
+CREATE OR ALTER FUNCTION dbo.fn_HistorialEquipo
+(
+    @numeroSerie VARCHAR(60)
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT
+        o.idOrden,
+        o.numeroOrden,
+        o.fechaIngreso,
+        o.estado,
+        o.prioridad,
+        o.problemaReportado,
+
+        d.descripcion AS diagnostico,
+        tec.nombreCompleto AS tecnico,
+
+        r.estado AS estadoReparacion,
+        r.costoManoObra,
+        r.fechaFin,
+
+        f.serie,
+        f.numero,
+        f.total AS totalFacturado
+
+    FROM dbo.Equipo AS e
+
+    INNER JOIN dbo.OrdenServicio AS o
+        ON o.idEquipo = e.idEquipo
+
+    LEFT JOIN dbo.Diagnostico AS d
+        ON d.idOrden = o.idOrden
+
+    LEFT JOIN dbo.Usuario AS tec
+        ON tec.idUsuario = d.idTecnico
+
+    LEFT JOIN dbo.Reparacion AS r
+        ON r.idDiagnostico = d.idDiagnostico
+
+    LEFT JOIN dbo.Factura AS f
+        ON f.idOrden = o.idOrden
+       AND f.estado = 'EMITIDA'
+
+    WHERE e.numeroSerie = @numeroSerie
+);
+GO
 
 SET NOEXEC OFF;
 GO
