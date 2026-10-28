@@ -81,4 +81,99 @@ public sealed class ReportesRepository
             },
             commandType: CommandType.StoredProcedure);
     }
+
+    // Reporte 5: Repuestos utilizados con costo y venta historicos
+    public async Task<IEnumerable<dynamic>> RepuestosUtilizadosAsync(
+        DateTime? fechaInicio,
+        DateTime? fechaFin,
+        int? idTecnico,
+        int? idBodega)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QueryAsync(
+            "dbo.sp_Reporte_05_RepuestosUtilizados",
+            new
+            {
+                fechaInicio,
+                fechaFin,
+                idTecnico,
+                idBodega
+            },
+            commandType: CommandType.StoredProcedure);
+    }
+
+    // Reporte 6: Inventario actual por bodega y categoria
+    public async Task<IEnumerable<dynamic>> InventarioAsync(
+        int? idBodega,
+        int? idCategoria)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QueryAsync(
+            "dbo.sp_Reporte_06_Inventario",
+            new
+            {
+                idBodega,
+                idCategoria
+            },
+            commandType: CommandType.StoredProcedure);
+    }
+
+    // Reporte 7: Repuestos en o bajo el stock minimo
+    public async Task<IEnumerable<dynamic>> BajoMinimoAsync(
+        int? idBodega)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QueryAsync(
+            "dbo.sp_Reporte_07_BajoMinimo",
+            new
+            {
+                idBodega
+            },
+            commandType: CommandType.StoredProcedure);
+    }
+
+    // Reporte 8: Compras por proveedor con detalle
+    public async Task<IEnumerable<dynamic>> ComprasProveedorAsync(
+        int? idProveedor,
+        DateTime? fechaInicio,
+        DateTime? fechaFin,
+        string? estado)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QueryAsync(
+            "dbo.sp_Reporte_08_ComprasProveedor",
+            new
+            {
+                idProveedor,
+                fechaInicio,
+                fechaFin,
+                estado
+            },
+            commandType: CommandType.StoredProcedure);
+    }
+
+    // Reporte 9: Kardex por bodega y repuesto
+    public async Task<IEnumerable<dynamic>> KardexAsync(
+        int? idBodega,
+        int? idRepuesto,
+        DateTime? fechaInicio,
+        DateTime? fechaFin)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QueryAsync(
+            "dbo.sp_Reporte_09_Kardex",
+            new
+            {
+                idBodega,
+                idRepuesto,
+                fechaInicio,
+                fechaFin
+            },
+            commandType: CommandType.StoredProcedure);
+    }
 }
