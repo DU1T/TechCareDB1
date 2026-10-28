@@ -109,6 +109,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_Reporte_02_HistorialCliente
 AS
 BEGIN
     SET NOCOUNT ON;
+        -- Tratar NIT vacio o con espacios como NULL
+    SET @nit = NULLIF(LTRIM(RTRIM(@nit)), '');
 
     -- Se requiere al menos un criterio de busqueda
     IF @idCliente IS NULL AND
@@ -173,7 +175,7 @@ GO
 
 -- ============================================================
 -- REPORTE 04: Productividad por tecnico
--- Filtros opcionales: tecnico y rango de fechas
+-- Cada metrica se atribuye al tecnico que realizo el trabajo
 -- ============================================================
 
 CREATE OR ALTER PROCEDURE dbo.sp_Reporte_04_ProductividadTecnico
@@ -184,6 +186,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- Validar rango de fechas
     IF @fechaInicio IS NOT NULL
        AND @fechaFin IS NOT NULL
        AND @fechaInicio > @fechaFin
@@ -197,24 +200,11 @@ BEGIN
         u.idUsuario,
         u.nombreCompleto AS tecnico,
 
-        COUNT(d.idDiagnostico) AS diagnosticos,
+        dg.diagnosticos,
+        rp.reparacionesFinalizadas,
 
-        SUM(
-            CASE
-                WHEN r.estado = 'FINALIZADA' THEN 1
-                ELSE 0
-            END
-        ) AS reparacionesFinalizadas,
-
-        SUM(ISNULL(act.horas, 0)) AS horasRegistradas,
-
-        SUM(
-            CASE
-                WHEN r.estado = 'FINALIZADA'
-                    THEN r.costoManoObra
-                ELSE 0
-            END
-        ) AS manoObraGenerada
+        ISNULL(ac.horas, 0) AS horasRegistradas,
+        ISNULL(rp.manoObra, 0) AS manoObraGenerada
 
     FROM dbo.Usuario AS u
 
@@ -225,41 +215,68 @@ BEGIN
         ON rol.idRol = ur.idRol
        AND rol.nombre = 'TECNICO'
 
-    LEFT JOIN dbo.Diagnostico AS d
-        ON d.idTecnico = u.idUsuario
-       AND (
-            @fechaInicio IS NULL
-            OR d.fechaDiagnostico >= @fechaInicio
-       )
-       AND (
-            @fechaFin IS NULL
-            OR d.fechaDiagnostico <
-                DATEADD(DAY, 1, @fechaFin)
-       )
-
-    LEFT JOIN dbo.Reparacion AS r
-        ON r.idDiagnostico = d.idDiagnostico
-
-    LEFT JOIN
+    -- Diagnosticos: tecnico que realizo el diagnostico
+    OUTER APPLY
     (
         SELECT
-            a.idReparacion,
+            COUNT(*) AS diagnosticos
+        FROM dbo.Diagnostico AS d
+        WHERE d.idTecnico = u.idUsuario
+          AND (
+                @fechaInicio IS NULL
+                OR d.fechaDiagnostico >= @fechaInicio
+          )
+          AND (
+                @fechaFin IS NULL
+                OR d.fechaDiagnostico <
+                    DATEADD(DAY, 1, @fechaFin)
+          )
+    ) AS dg
+
+    -- Reparaciones: tecnico que realizo la reparacion
+    OUTER APPLY
+    (
+        SELECT
+            COUNT(*) AS reparacionesFinalizadas,
+            SUM(r.costoManoObra) AS manoObra
+        FROM dbo.Reparacion AS r
+        WHERE r.idTecnico = u.idUsuario
+          AND r.estado = 'FINALIZADA'
+          AND (
+                @fechaInicio IS NULL
+                OR r.fechaFin >= @fechaInicio
+          )
+          AND (
+                @fechaFin IS NULL
+                OR r.fechaFin <
+                    DATEADD(DAY, 1, @fechaFin)
+          )
+    ) AS rp
+
+    -- Actividades: tecnico que registro las horas
+    OUTER APPLY
+    (
+        SELECT
             SUM(a.horas) AS horas
         FROM dbo.ActividadReparacion AS a
-        GROUP BY a.idReparacion
-    ) AS act
-        ON act.idReparacion = r.idReparacion
+        WHERE a.idTecnico = u.idUsuario
+          AND (
+                @fechaInicio IS NULL
+                OR a.fechaActividad >= @fechaInicio
+          )
+          AND (
+                @fechaFin IS NULL
+                OR a.fechaActividad <
+                    DATEADD(DAY, 1, @fechaFin)
+          )
+    ) AS ac
 
     WHERE
         (@idTecnico IS NULL OR u.idUsuario = @idTecnico)
 
-    GROUP BY
-        u.idUsuario,
-        u.nombreCompleto
-
     ORDER BY
-        reparacionesFinalizadas DESC,
-        tecnico;
+        rp.reparacionesFinalizadas DESC,
+        u.nombreCompleto;
 END;
 GO
 

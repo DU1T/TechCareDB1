@@ -65,7 +65,7 @@ IF @total <> 3
    OR @canceladas <> 2
    OR @finalizadas <> 1
 BEGIN
-    ;THROW 52090,
+    ;THROW 50290,
         'T11 FALLIDA: El historial no coincide con los datos esperados.',
         1;
 END;
