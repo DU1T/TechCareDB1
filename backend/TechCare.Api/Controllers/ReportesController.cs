@@ -129,4 +129,161 @@ public sealed class ReportesController : ControllerBase
 
         return Ok(resultado);
     }
+
+    // GET /api/reportes/5
+    // Repuestos utilizados por orden, tecnico y bodega
+    [HttpGet("5")]
+    public async Task<IActionResult> RepuestosUtilizados(
+        [FromQuery] DateTime? fechaInicio,
+        [FromQuery] DateTime? fechaFin,
+        [FromQuery] int? idTecnico,
+        [FromQuery] int? idBodega)
+    {
+        if (idTecnico <= 0 || idBodega <= 0)
+        {
+            return BadRequest(new
+            {
+                error = "Revise los filtros de tecnico y bodega."
+            });
+        }
+
+        if (FechasInvertidas(fechaInicio, fechaFin))
+        {
+            return BadRequest(new
+            {
+                error = "La fecha inicial no puede ser posterior a la final."
+            });
+        }
+
+        var resultado = await _repo.RepuestosUtilizadosAsync(
+            fechaInicio?.Date,
+            fechaFin?.Date,
+            idTecnico,
+            idBodega);
+
+        return Ok(resultado);
+    }
+
+    // GET /api/reportes/6
+    // Inventario actual por bodega y categoria
+    [HttpGet("6")]
+    public async Task<IActionResult> Inventario(
+        [FromQuery] int? idBodega,
+        [FromQuery] int? idCategoria)
+    {
+        if (idBodega <= 0 || idCategoria <= 0)
+        {
+            return BadRequest(new
+            {
+                error = "Revise los filtros de bodega y categoria."
+            });
+        }
+
+        var resultado = await _repo.InventarioAsync(
+            idBodega,
+            idCategoria);
+
+        return Ok(resultado);
+    }
+
+    // GET /api/reportes/7
+    // Repuestos en o bajo el stock minimo
+    [HttpGet("7")]
+    public async Task<IActionResult> BajoMinimo(
+        [FromQuery] int? idBodega)
+    {
+        if (idBodega <= 0)
+        {
+            return BadRequest(new
+            {
+                error = "El ID de la bodega debe ser mayor que cero."
+            });
+        }
+
+        var resultado = await _repo.BajoMinimoAsync(idBodega);
+
+        return Ok(resultado);
+    }
+
+    // GET /api/reportes/8
+    // Compras por proveedor con detalle (incluye pendientes)
+    [HttpGet("8")]
+    public async Task<IActionResult> ComprasProveedor(
+        [FromQuery] int? idProveedor,
+        [FromQuery] DateTime? fechaInicio,
+        [FromQuery] DateTime? fechaFin,
+        [FromQuery] string? estado)
+    {
+        estado = string.IsNullOrWhiteSpace(estado)
+            ? null : estado.Trim().ToUpperInvariant();
+
+        if (idProveedor <= 0 ||
+            (estado is not null && !EstadosCompra.Contains(estado)))
+        {
+            return BadRequest(new
+            {
+                error = "Revise el proveedor y el estado (PENDIENTE, RECIBIDA o ANULADA)."
+            });
+        }
+
+        if (FechasInvertidas(fechaInicio, fechaFin))
+        {
+            return BadRequest(new
+            {
+                error = "La fecha inicial no puede ser posterior a la final."
+            });
+        }
+
+        var resultado = await _repo.ComprasProveedorAsync(
+            idProveedor,
+            fechaInicio?.Date,
+            fechaFin?.Date,
+            estado);
+
+        return Ok(resultado);
+    }
+
+    // GET /api/reportes/9
+    // Kardex: entradas y salidas con existencia antes y despues
+    [HttpGet("9")]
+    public async Task<IActionResult> Kardex(
+        [FromQuery] int? idBodega,
+        [FromQuery] int? idRepuesto,
+        [FromQuery] DateTime? fechaInicio,
+        [FromQuery] DateTime? fechaFin)
+    {
+        if (idBodega <= 0 || idRepuesto <= 0)
+        {
+            return BadRequest(new
+            {
+                error = "Revise los filtros de bodega y repuesto."
+            });
+        }
+
+        if (FechasInvertidas(fechaInicio, fechaFin))
+        {
+            return BadRequest(new
+            {
+                error = "La fecha inicial no puede ser posterior a la final."
+            });
+        }
+
+        var resultado = await _repo.KardexAsync(
+            idBodega,
+            idRepuesto,
+            fechaInicio?.Date,
+            fechaFin?.Date);
+
+        return Ok(resultado);
+    }
+
+    private static readonly string[] EstadosCompra =
+        ["PENDIENTE", "RECIBIDA", "ANULADA"];
+
+    private static bool FechasInvertidas(
+        DateTime? fechaInicio,
+        DateTime? fechaFin)
+        => fechaInicio.HasValue &&
+           fechaFin.HasValue &&
+           fechaInicio.Value.Date > fechaFin.Value.Date;
 }
