@@ -13,6 +13,54 @@ public sealed class OrdenesRepository
         _db = db;
     }
 
+    // Consulta general de ordenes
+    // Incluye ordenes activas y finalizadas
+    public async Task<IEnumerable<dynamic>> ListarAsync(
+        string? estado,
+        string? prioridad,
+        int? idTecnico)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QueryAsync(
+            "dbo.sp_ListarOrdenes",
+            new
+            {
+                estado,
+                prioridad,
+                idTecnico
+            },
+            commandType: CommandType.StoredProcedure);
+    }
+
+    // Consulta el detalle completo de una orden y su historial.
+    public async Task<object?> DetalleAsync(int idOrden)
+    {
+        await using var cn = _db.Create();
+
+        using var resultados = await cn.QueryMultipleAsync(
+            "dbo.sp_DetalleOrden",
+            new { idOrden },
+            commandType: CommandType.StoredProcedure);
+
+        // Primer conjunto: datos de la orden
+        var orden = await resultados.ReadFirstOrDefaultAsync<dynamic>();
+
+        // Segundo conjunto: historial de estados
+        var historial = (await resultados.ReadAsync<dynamic>()).ToList();
+
+        if (orden is null)
+        {
+            return null;
+        }
+
+        return new
+        {
+            orden,
+            historial
+        };
+    }
+
     public async Task<object> CrearAsync(
         CrearOrdenDto dto,
         int idUsuario)

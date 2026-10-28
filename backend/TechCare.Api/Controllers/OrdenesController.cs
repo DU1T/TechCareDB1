@@ -21,16 +21,61 @@ public sealed class OrdenesController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = "REPORTE_VER")]
-    public IActionResult Listar(
+    public async Task<IActionResult> Listar(
         [FromQuery] string? estado,
         [FromQuery] string? prioridad,
         [FromQuery] int? idTecnico)
-        => Pendiente();
+    {
+        estado = string.IsNullOrWhiteSpace(estado)
+            ? null
+            : estado.Trim();
+
+        prioridad = string.IsNullOrWhiteSpace(prioridad)
+            ? null
+            : prioridad.Trim();
+
+        if ((estado?.Length ?? 0) > 25 ||
+            (prioridad?.Length ?? 0) > 10 ||
+            idTecnico <= 0)
+        {
+            return BadRequest(new
+            {
+                error = "Revise los filtros de estado, prioridad y tecnico."
+            });
+        }
+
+        var resultado = await _repo.ListarAsync(
+            estado,
+            prioridad,
+            idTecnico);
+
+        return Ok(resultado);
+    }
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = "REPORTE_VER")]
-    public IActionResult Detalle(int id)
-        => Pendiente();
+    public async Task<IActionResult> Detalle(int id)
+    {
+        if (id <= 0)
+        {
+            return BadRequest(new
+            {
+                error = "El identificador de la orden debe ser mayor que cero."
+            });
+        }
+
+        var resultado = await _repo.DetalleAsync(id);
+
+        if (resultado is null)
+        {
+            return NotFound(new
+            {
+                error = "La orden solicitada no existe."
+            });
+        }
+
+        return Ok(resultado);
+    }
 
     [HttpPost]
     [Authorize(Policy = "ORDEN_CREAR")]
