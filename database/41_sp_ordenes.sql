@@ -621,9 +621,208 @@ BEGIN
 END;
 GO
 
+-- ============================================================
+-- PASO 134: Consultar listado general de ordenes
+-- Incluye ordenes activas, canceladas y entregadas
+-- ============================================================
 
+CREATE OR ALTER PROCEDURE dbo.sp_ListarOrdenes
+    @estado VARCHAR(25) = NULL,
+    @prioridad VARCHAR(10) = NULL,
+    @idTecnico INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
 
+    SELECT
+        o.idOrden,
+        o.numeroOrden,
+        o.fechaIngreso,
+        o.fechaEstimada,
+        o.estado,
+        eo.descripcion AS estadoDescripcion,
+        o.prioridad,
+        o.problemaReportado,
 
+        c.idCliente,
+        c.nombre AS cliente,
+        c.nit AS nitCliente,
+
+        e.idEquipo,
+        e.numeroSerie,
+        e.modelo,
+        te.nombre AS tipoEquipo,
+        m.nombre AS marca,
+
+        o.idUsuarioRecepcion,
+        recep.nombreCompleto AS recepcionista,
+
+        o.idTecnicoAsignado,
+        tec.nombreCompleto AS tecnicoAsignado
+
+    FROM dbo.OrdenServicio AS o
+
+    INNER JOIN dbo.EstadoOrden AS eo
+        ON eo.codigo = o.estado
+
+    INNER JOIN dbo.Equipo AS e
+        ON e.idEquipo = o.idEquipo
+
+    INNER JOIN dbo.Cliente AS c
+        ON c.idCliente = e.idCliente
+
+    INNER JOIN dbo.TipoEquipo AS te
+        ON te.idTipoEquipo = e.idTipoEquipo
+
+    INNER JOIN dbo.Marca AS m
+        ON m.idMarca = e.idMarca
+
+    INNER JOIN dbo.Usuario AS recep
+        ON recep.idUsuario = o.idUsuarioRecepcion
+
+    LEFT JOIN dbo.Usuario AS tec
+        ON tec.idUsuario = o.idTecnicoAsignado
+
+    WHERE
+        (@estado IS NULL OR o.estado = @estado)
+        AND (@prioridad IS NULL OR o.prioridad = @prioridad)
+        AND (@idTecnico IS NULL
+             OR o.idTecnicoAsignado = @idTecnico)
+
+    ORDER BY
+        o.fechaIngreso DESC,
+        o.idOrden DESC;
+END;
+GO
+
+-- ============================================================
+-- PASO 136: Detalle completo de una orden de servicio
+-- Devuelve dos conjuntos: datos generales e historial
+-- ============================================================
+
+CREATE OR ALTER PROCEDURE dbo.sp_DetalleOrden
+    @idOrden INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @idOrden IS NULL OR @idOrden <= 0
+    BEGIN
+        ;THROW 50291,
+            'El identificador de la orden no es valido.',
+            1;
+    END;
+
+    -- RESULTADO 1: Orden, cliente, equipo y reparacion
+    SELECT
+        o.idOrden,
+        o.numeroOrden,
+        o.fechaIngreso,
+        o.fechaEstimada,
+        o.estado,
+        eo.descripcion AS estadoDescripcion,
+        o.prioridad,
+        o.problemaReportado,
+        o.observaciones,
+
+        c.idCliente,
+        c.nombre AS cliente,
+        c.nit AS nitCliente,
+
+        e.idEquipo,
+        e.numeroSerie,
+        e.modelo,
+        te.nombre AS tipoEquipo,
+        m.nombre AS marca,
+
+        o.idUsuarioRecepcion,
+        recep.nombreCompleto AS recepcionista,
+
+        o.idTecnicoAsignado,
+        asignado.nombreCompleto AS tecnicoAsignado,
+
+        d.idDiagnostico,
+        d.fechaDiagnostico,
+        d.descripcion AS diagnostico,
+        d.costoManoObraEstimado,
+        d.autorizado,
+        d.fechaRespuestaCliente,
+        diagnostica.nombreCompleto AS tecnicoDiagnostico,
+
+        r.idReparacion,
+        r.estado AS estadoReparacion,
+        r.fechaInicio AS fechaInicioReparacion,
+        r.fechaFin AS fechaFinReparacion,
+        r.descripcionTrabajo,
+        r.costoManoObra,
+        repara.nombreCompleto AS tecnicoReparacion,
+
+        f.idFactura,
+        f.serie AS serieFactura,
+        f.numero AS numeroFactura,
+        f.total AS totalFactura,
+        f.estado AS estadoFactura
+
+    FROM dbo.OrdenServicio AS o
+
+    INNER JOIN dbo.EstadoOrden AS eo
+        ON eo.codigo = o.estado
+
+    INNER JOIN dbo.Equipo AS e
+        ON e.idEquipo = o.idEquipo
+
+    INNER JOIN dbo.Cliente AS c
+        ON c.idCliente = e.idCliente
+
+    INNER JOIN dbo.TipoEquipo AS te
+        ON te.idTipoEquipo = e.idTipoEquipo
+
+    INNER JOIN dbo.Marca AS m
+        ON m.idMarca = e.idMarca
+
+    INNER JOIN dbo.Usuario AS recep
+        ON recep.idUsuario = o.idUsuarioRecepcion
+
+    LEFT JOIN dbo.Usuario AS asignado
+        ON asignado.idUsuario = o.idTecnicoAsignado
+
+    LEFT JOIN dbo.Diagnostico AS d
+        ON d.idOrden = o.idOrden
+
+    LEFT JOIN dbo.Usuario AS diagnostica
+        ON diagnostica.idUsuario = d.idTecnico
+
+    LEFT JOIN dbo.Reparacion AS r
+        ON r.idDiagnostico = d.idDiagnostico
+
+    LEFT JOIN dbo.Usuario AS repara
+        ON repara.idUsuario = r.idTecnico
+
+    LEFT JOIN dbo.Factura AS f
+        ON f.idOrden = o.idOrden
+
+    WHERE o.idOrden = @idOrden;
+
+    -- RESULTADO 2: Historial de estados
+    SELECT
+        h.idHistorial,
+        h.estadoAnterior,
+        h.estadoNuevo,
+        h.fechaCambio,
+        h.idUsuario,
+        u.nombreCompleto AS usuarioResponsable,
+        h.observacion
+
+    FROM dbo.HistorialEstadoOrden AS h
+
+    LEFT JOIN dbo.Usuario AS u
+        ON u.idUsuario = h.idUsuario
+
+    WHERE h.idOrden = @idOrden
+
+    ORDER BY h.idHistorial;
+END;
+GO
 
 
 
