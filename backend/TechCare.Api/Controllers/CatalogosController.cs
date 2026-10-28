@@ -1,4 +1,4 @@
-// Listas de solo lectura para los filtros y formularios de inventario y compras
+// Listas de solo lectura para los filtros y formularios de inventario, compras y reportes
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TechCare.Api.Data;
@@ -32,4 +32,9 @@ public sealed class CatalogosController : ControllerBase
     [HttpGet("repuestos")]
     public async Task<IActionResult> Repuestos([FromQuery] int? idCategoria)
         => Ok(await _repo.RepuestosAsync(idCategoria));
+
+    // Solo id y nombre: para el filtro de técnico de los reportes 1, 4 y 5
+    [HttpGet("tecnicos")]
+    public async Task<IActionResult> Tecnicos()
+        => Ok(await _repo.TecnicosAsync());
 }

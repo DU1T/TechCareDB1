@@ -93,7 +93,7 @@ export const MENU: ItemMenu[] = [
     icono: 'i-lucide-chart-no-axes-column',
     grupo: 'Análisis',
     permiso: 'REPORTE_VER',
-    listo: false,
+    listo: true,
   },
   {
     etiqueta: 'Usuarios',

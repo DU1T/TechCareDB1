@@ -214,4 +214,21 @@ public sealed class InventarioRepository
             """,
             new { idCategoria });
     }
+
+    public async Task<IEnumerable<dynamic>> TecnicosAsync()
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QueryAsync(
+            """
+            SELECT u.idUsuario, u.nombreCompleto
+            FROM dbo.Usuario AS u
+            WHERE u.estado = 'ACTIVO'
+              AND EXISTS (SELECT 1
+                          FROM dbo.UsuarioRol AS ur
+                          INNER JOIN dbo.Rol AS r ON r.idRol = ur.idRol
+                          WHERE ur.idUsuario = u.idUsuario AND r.nombre = 'TECNICO')
+            ORDER BY u.nombreCompleto;
+            """);
+    }
 }
