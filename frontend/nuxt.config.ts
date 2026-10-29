@@ -41,6 +41,7 @@ export default defineNuxtConfig({
         'lucide:sliders-horizontal',
         'lucide:package-check',
         'lucide:arrow-left',
+        'lucide:banknote',
       ],
     },
   },
