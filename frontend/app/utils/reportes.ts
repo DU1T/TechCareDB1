@@ -308,5 +308,68 @@ export const REPORTES: Reporte[] = [
     }],
   },
 
-  // ---------------- Facturación (A): agregar aquí los reportes 10 y 11
+  // ---------------- Facturación (A)
+  {
+    numero: 10,
+    titulo: 'Facturas con saldo',
+    descripcion: 'Cuentas por cobrar: cada factura con lo pagado y lo pendiente, y el detalle de sus pagos.',
+    grupo: 'Facturación',
+    ruta: '/reportes/10',
+    filtros: [
+      // La casilla solo se envía si está marcada; sin ella el reporte muestra solo facturas con saldo
+      { nombre: 'incluirPagadas', etiqueta: 'Incluir facturas ya pagadas', tipo: 'casilla' },
+      { nombre: 'idCliente', etiqueta: 'ID de cliente', tipo: 'numero' },
+      ...fechas,
+    ],
+    resultados: [
+      {
+        clave: 'facturas',
+        titulo: 'Facturas',
+        columnas: [
+          { clave: 'numeroFactura', etiqueta: 'Factura' },
+          { clave: 'fechaEmision', etiqueta: 'Emisión', formato: 'fecha' },
+          { clave: 'numeroOrden', etiqueta: 'Orden' },
+          { clave: 'cliente', etiqueta: 'Cliente' },
+          { clave: 'nitFacturacion', etiqueta: 'NIT' },
+          { clave: 'total', etiqueta: 'Total', formato: 'moneda' },
+          { clave: 'totalPagado', etiqueta: 'Pagado', formato: 'moneda' },
+          { clave: 'saldo', etiqueta: 'Saldo', formato: 'moneda' },
+          { clave: 'estadoPago', etiqueta: 'Estado', formato: 'estado' },
+        ],
+      },
+      {
+        clave: 'pagos',
+        titulo: 'Pagos de esas facturas',
+        columnas: [
+          { clave: 'numeroFactura', etiqueta: 'Factura' },
+          { clave: 'fechaPago', etiqueta: 'Fecha', formato: 'fechaHora' },
+          { clave: 'metodoPago', etiqueta: 'Método' },
+          { clave: 'monto', etiqueta: 'Monto', formato: 'moneda' },
+          { clave: 'referencia', etiqueta: 'Referencia' },
+          { clave: 'estadoPago', etiqueta: 'Estado', formato: 'estado' },
+          { clave: 'cajero', etiqueta: 'Cajero' },
+          { clave: 'motivoAnulacion', etiqueta: 'Motivo de anulación' },
+        ],
+      },
+    ],
+  },
+  {
+    numero: 11,
+    titulo: 'Ingresos por periodo',
+    descripcion: 'Facturación mes a mes, separando mano de obra y repuestos (solo facturas emitidas).',
+    grupo: 'Facturación',
+    ruta: '/reportes/11',
+    filtros: [...fechas],
+    resultados: [{
+      columnas: [
+        { clave: 'periodo', etiqueta: 'Periodo' },
+        { clave: 'facturas', etiqueta: 'Facturas', formato: 'numero' },
+        { clave: 'ingresoManoObra', etiqueta: 'Mano de obra', formato: 'moneda' },
+        { clave: 'ingresoRepuestos', etiqueta: 'Repuestos', formato: 'moneda' },
+        { clave: 'subtotal', etiqueta: 'Subtotal', formato: 'moneda' },
+        { clave: 'impuesto', etiqueta: 'Impuesto', formato: 'moneda' },
+        { clave: 'total', etiqueta: 'Total', formato: 'moneda' },
+      ],
+    }],
+  },
 ]

@@ -57,7 +57,7 @@ export const MENU: ItemMenu[] = [
     icono: 'i-lucide-receipt',
     grupo: 'Caja',
     permiso: 'PAGO_REGISTRAR',
-    listo: false,
+    listo: true,
   },
   {
     etiqueta: 'Inventario',

@@ -20,6 +20,7 @@ const COLOR_ESTADO: Record<string, 'success' | 'warning' | 'error' | 'info' | 'n
   ...Object.fromEntries(Object.entries(ESTADO_STOCK).map(([k, v]) => [k, v.color])),
   ...Object.fromEntries(Object.entries(ESTADO_COMPRA).map(([k, v]) => [k, v.color])),
   ENTREGADO: 'success', LISTO: 'success', FINALIZADA: 'success', ENTRADA: 'success',
+  PAGADA: 'success', APLICADO: 'success', PARCIAL: 'warning',
   REPARACION: 'info', EN_PROCESO: 'info', DIAGNOSTICO: 'info',
   ESPERANDO_AUTORIZACION: 'warning', ALTA: 'warning',
   URGENTE: 'error', SALIDA: 'error',
