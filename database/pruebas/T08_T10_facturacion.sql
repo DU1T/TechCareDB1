@@ -15,11 +15,17 @@ Datos de entrada:
   y los usuarios caja1 y recepcion1.
 
 IMPORTANTE: este script CONFIRMA cambios (crea facturas, pagos y una entrega). Ejecútelo en su base
-personal (TechCare_Front), NUNCA en la compartida. Para repetirlo, reconstruya la base o use otra orden.
+personal (TechCare_<nombre>, seleccionada en la lista de bases de datos), NUNCA en la compartida. Para repetirlo, reconstruya la base o use otra orden.
 
 Resultado esperado: cada bloque imprime "OK ..." y ningún bloque imprime "FALLA".
 */
-USE TechCare_Front;
+-- Se ejecuta sobre la base seleccionada: elija su base personal (TechCare_<nombre>) en la lista de bases de datos.
+-- Se detiene si no es una base TechCare o si es la compartida (TechCare), porque este script confirma cambios.
+IF DB_NAME() NOT LIKE N'TechCare%' OR DB_NAME() = N'TechCare'
+BEGIN
+    RAISERROR(N'Seleccione su base personal TechCare_<nombre>. No se ejecuta en master, en Azure ni en la compartida. Script detenido.', 16, 1);
+    SET NOEXEC ON;
+END
 GO
 SET NOCOUNT ON;
 
@@ -216,4 +222,6 @@ END TRY
 BEGIN CATCH
     PRINT IIF(ERROR_NUMBER() = 51003, 'OK   UPDATE directo a ENTREGADO rechazado por el trigger (51003)', CONCAT('FALLA: error inesperado ', ERROR_NUMBER(), ' ', ERROR_MESSAGE()));
 END CATCH;
+GO
+SET NOEXEC OFF;
 GO
