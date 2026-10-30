@@ -79,6 +79,27 @@ public sealed class InventarioRepository
             commandType: CommandType.StoredProcedure);
     }
 
+    // Consumo de un repuesto en una reparación: detalle + salida + movimiento en una transacción (R06, R07, R09)
+    public async Task<object> UtilizarRepuestoAsync(
+        int idReparacion,
+        UtilizarRepuestoDto dto,
+        int idUsuario)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QuerySingleAsync(
+            "dbo.sp_UtilizarRepuesto",
+            new
+            {
+                idReparacion,
+                idBodega = dto.IdBodega,
+                idRepuesto = dto.IdRepuesto,
+                cantidad = dto.Cantidad,
+                idUsuario
+            },
+            commandType: CommandType.StoredProcedure);
+    }
+
     public async Task<IEnumerable<dynamic>> ComprasAsync(
         string? estado,
         int? idProveedor)

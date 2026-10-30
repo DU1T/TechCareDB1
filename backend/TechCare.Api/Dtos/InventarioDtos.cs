@@ -6,6 +6,11 @@ public record AjusteInventarioDto(
     int Cantidad,
     string Motivo);
 
+public record UtilizarRepuestoDto(
+    int IdBodega,
+    int IdRepuesto,
+    int Cantidad);
+
 public record LineaCompraDto(
     int IdRepuesto,
     int Cantidad,
