@@ -216,6 +216,7 @@ const colHistorial: ColumnaReporte[] = [
         <span class="text-sm text-bruma-600">Prioridad {{ String(e.prioridad ?? '').toLowerCase() }}</span>
       </header>
 
+      <AccionesTaller :id-orden="id" :estado="e.estado" @hecho="cargar(true)" />
 
       <section v-if="hayAcciones" class="no-imprimir flex flex-wrap items-center gap-2 rounded-lg border border-bruma-200 bg-white p-3" aria-label="Acciones de la orden">
         <span class="mr-1 text-sm font-medium text-bruma-600">Acciones</span>
