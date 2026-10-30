@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using TechCare.Api.Data;
 
 namespace TechCare.Api.Controllers;
@@ -276,6 +277,92 @@ public sealed class ReportesController : ControllerBase
 
         return Ok(resultado);
     }
+
+    // GET /api/reportes/10
+    // Facturas con saldo y sus pagos
+    [HttpGet("10")]
+    public async Task<IActionResult> FacturasSaldo(
+        [FromQuery] int? idCliente,
+        [FromQuery] DateTime? fechaInicio,
+        [FromQuery] DateTime? fechaFin,
+        [FromQuery] bool incluirPagadas = false)
+    {
+        if (idCliente <= 0 || FechasInvertidas(fechaInicio, fechaFin))
+        {
+            return BadRequest(new
+            {
+                error = "Revise el cliente y el rango de fechas."
+            });
+        }
+
+        var resultado = await _repo.FacturasSaldoAsync(
+            incluirPagadas,
+            idCliente,
+            fechaInicio?.Date,
+            fechaFin?.Date);
+
+        return Ok(resultado);
+    }
+
+    // GET /api/reportes/11
+    // Ingresos por periodo
+    [HttpGet("11")]
+    public async Task<IActionResult> IngresosPeriodo(
+        [FromQuery] DateTime? fechaInicio,
+        [FromQuery] DateTime? fechaFin)
+    {
+        if (FechasInvertidas(fechaInicio, fechaFin))
+        {
+            return BadRequest(new
+            {
+                error = "La fecha inicial no puede ser posterior a la final."
+            });
+        }
+
+        var resultado = await _repo.IngresosPeriodoAsync(
+            fechaInicio?.Date,
+            fechaFin?.Date);
+
+        return Ok(resultado);
+    }
+
+    // GET /api/reportes/12?idOrden=3
+    // Trazabilidad de una orden: cinco resultados
+    [HttpGet("12")]
+    public async Task<IActionResult> Trazabilidad(
+        [FromQuery] int? idOrden)
+    {
+        if (idOrden is null or <= 0)
+        {
+            return BadRequest(new
+            {
+                error = "Debe indicar un identificador de orden valido."
+            });
+        }
+
+        try
+        {
+            var resultado = await _repo.TrazabilidadAsync(
+                idOrden.Value);
+
+            return Ok(resultado);
+        }
+        catch (SqlException ex) when (ex.Number == 50327)
+        {
+            return NotFound(new
+            {
+                error = ex.Message
+            });
+        }
+        catch (SqlException ex) when (ex.Number == 50326)
+        {
+            return BadRequest(new
+            {
+                error = ex.Message
+            });
+        }
+    }
+
 
     private static readonly string[] EstadosCompra =
         ["PENDIENTE", "RECIBIDA", "ANULADA"];
