@@ -13,6 +13,58 @@ public sealed class FacturacionRepository
         _db = db;
     }
 
+    // Facturas disponibles para la pantalla de Caja.
+// conSaldo=true devuelve solo facturas emitidas con saldo pendiente.
+public async Task<IEnumerable<dynamic>> ListarFacturasAsync(
+    bool conSaldo)
+{
+    await using var cn = _db.Create();
+
+    const string sql = """
+        SELECT
+            idFactura,
+            numeroFactura,
+            fechaEmision,
+            numeroOrden,
+            cliente,
+            nitFacturacion,
+            total,
+            totalPagado,
+            saldo,
+            estadoPago
+        FROM dbo.vw_FacturasSaldo
+        WHERE
+            @conSaldo = 0
+            OR (
+                estadoFactura = 'EMITIDA'
+                AND saldo > 0
+            )
+        ORDER BY fechaEmision DESC, idFactura DESC;
+        """;
+
+    return await cn.QueryAsync(
+        sql,
+        new { conSaldo });
+}
+
+    // Solo metodos de pago activos.
+    public async Task<IEnumerable<dynamic>> MetodosPagoAsync()
+    {
+        await using var cn = _db.Create();
+
+        const string sql = """
+            SELECT
+                idMetodoPago,
+                nombre,
+                requiereReferencia
+            FROM dbo.MetodoPago
+            WHERE estado = 'ACTIVO'
+            ORDER BY idMetodoPago;
+            """;
+
+        return await cn.QueryAsync(sql);
+    }
+
     // Emitir factura de una orden LISTO
     public async Task<object> FacturarOrdenAsync(
         int idOrden,
