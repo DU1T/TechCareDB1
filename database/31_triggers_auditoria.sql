@@ -9,6 +9,9 @@
    dbo.trg_MovimientoInventario_Inmutable  INSTEAD OF UPDATE, DELETE   (R14)
      THROW 51010, 'Los movimientos de inventario no se modifican ni eliminan; registre un ajuste.', 1;
 
+   dbo.trg_Pago_NoExcedeTotal  AFTER INSERT, UPDATE ON dbo.Pago   (R12, R16)
+     THROW 51011 si en una factura afectada fn_TotalPagado > total (pago directo en SQL)
+
    (Opcional) trg_Pago_NoEliminar / trg_Factura_NoEliminar  INSTEAD OF DELETE   (R14)
    ===================================================================== */
 -- Se ejecuta sobre la base a la que esté conectado: TechCare, TechCare_<nombre> o Azure.
@@ -50,6 +53,26 @@ BEGIN
     SET NOCOUNT ON;
     IF NOT EXISTS (SELECT 1 FROM deleted) RETURN;
     THROW 51010, 'Los movimientos de inventario no se modifican ni eliminan; registre un ajuste.', 1;
+END;
+GO
+
+-- R12/R16: la suma de pagos aplicados nunca supera el total de la factura, aunque el pago se
+-- inserte o modifique directo en SQL (sp_RegistrarPago ya lo valida; esto cubre todo lo demás)
+CREATE OR ALTER TRIGGER dbo.trg_Pago_NoExcedeTotal
+ON dbo.Pago
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF NOT (UPDATE(monto) OR UPDATE(estado) OR UPDATE(idFactura)) RETURN;   -- p. ej. solo cambia la fecha
+
+    -- Set-based: revisa cada factura afectada por las filas insertadas o modificadas
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.Factura f
+        WHERE f.idFactura IN (SELECT i.idFactura FROM inserted i)
+          AND dbo.fn_TotalPagado(f.idFactura) > f.total)
+        THROW 51011, 'La suma de los pagos aplicados no puede exceder el total de la factura (R12).', 1;
 END;
 GO
 

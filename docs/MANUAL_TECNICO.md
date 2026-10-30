@@ -63,7 +63,7 @@ Usuarios de prueba: `administrador1`, `recepcion1`, `tecnico1`, `bodega1`, `caja
 | `03_indices` · `04_tipos` · `05_catalogos` | Índices no agrupados · tipo tabla `TipoDetalleCompra` · estados, transiciones, roles, permisos y métodos de pago |
 | `10_funciones` | 5 funciones |
 | `20`–`22_vistas_*` | 5 vistas |
-| `30`–`31_triggers_*` | 3 triggers de tabla |
+| `30`–`31_triggers_*` | 4 triggers de tabla |
 | `40`–`43_sp_*` | 18 procedimientos de proceso |
 | `50`–`52_reportes_*` | 12 procedimientos de reporte |
 | `80`–`85_datos_*` | Datos de prueba y escenarios (85 termina con verificaciones que deben decir OK) |
@@ -111,13 +111,14 @@ Todo lo programable usa `CREATE OR ALTER`, así que los scripts se pueden volver
 | `fn_UsuarioTieneRol(@idUsuario, @rol)` | R03: el técnico que diagnostica o repara debe tener el rol (el administrador siempre puede) |
 | `fn_HistorialEquipo(@numeroSerie)` | Función de tabla: todas las órdenes de un equipo con diagnóstico, reparación y factura. Reporte 3 (T11) |
 
-### 4.5 Triggers (3 + 1)
+### 4.5 Triggers (4 + 1)
 
 | Trigger | Tipo | Qué protege |
 | --- | --- | --- |
 | `trg_OrdenServicio_Estado` | AFTER INSERT, UPDATE en `OrdenServicio` | Toda orden nace en RECIBIDO; cada cambio de estado debe existir en `TransicionEstado`; ENTREGADO exige entrega registrada, factura si hubo reparación y saldo cero; escribe `HistorialEstadoOrden` (R05) con el usuario de la aplicación. Errores 51001–51003 |
 | `trg_Repuesto_AuditoriaPrecio` | AFTER UPDATE en `Repuesto` | Cada cambio de precio de venta o costo de referencia queda en `AuditoriaPrecioRepuesto` (quién, cuándo, antes y después). T14 |
 | `trg_MovimientoInventario_Inmutable` | INSTEAD OF UPDATE, DELETE en `MovimientoInventario` | El kárdex no se edita ni se borra (R14); los errores se corrigen con un ajuste. Error 51010 |
+| `trg_Pago_NoExcedeTotal` | AFTER INSERT, UPDATE en `Pago` | La suma de pagos aplicados de una factura nunca supera su total (R12), aunque el pago se escriba directo en SQL (R16). `sp_RegistrarPago` ya lo valida antes de insertar; el trigger cubre cualquier otro camino. Error 51011 |
 | `trg_AuditoriaDDL` | DDL, sobre la base | Herramienta de desarrollo (92): registra quién cambió un procedimiento o vista en la base compartida e impide a los usuarios de desarrollo cambiar tablas. Error 51090 |
 
 ¿Cómo sabe un trigger qué usuario de la aplicación hizo el cambio? El procedimiento llama primero a `sp_EstablecerContexto`, que guarda `idUsuario` en `SESSION_CONTEXT`; el trigger lo lee. Si alguien actualiza desde SSMS, `idUsuario` queda vacío pero `usuarioBD` guarda el login de SQL.
@@ -192,7 +193,7 @@ Cada procedimiento lanza `THROW` con un código propio y un mensaje en español:
 | 50101–50122 | Inventario y compras |
 | 50201–50291 | Órdenes y taller (50280–50282: reportes 1–4) |
 | 50301–50327 | Facturación (50325–50327: reportes 10–12) |
-| 51001–51099 | Triggers (51001–51003 estados, 51010 kárdex, 51090 DDL) |
+| 51001–51099 | Triggers (51001–51003 estados, 51010 kárdex, 51011 pagos, 51090 DDL) |
 
 `SqlErrorMiddleware` de la API convierte los códigos 50000–51099 y las violaciones de PK, UNIQUE o FK (2627, 2601, 547) en **HTTP 409** con `{ "error": "mensaje" }`; la web muestra ese mensaje tal cual. La validación previa de la API responde **400**; sin sesión, **401**; sin permiso, **403**.
 
@@ -216,7 +217,7 @@ Cada procedimiento lanza `THROW` con un código propio y un mensaje en español:
 
 ## 7. Pruebas
 
-- `database/pruebas/`: scripts de T03 a T14 y R14 que imprimen `OK`/`FALLA`. Los que modifican datos (T04–T10, T13, T14, R14) lo hacen dentro de una transacción y terminan en `ROLLBACK`, así que no dejan cambios; T03, T11 y T12 son consultas de verificación.
+- `database/pruebas/`: scripts de T03 a T14 y R14 que imprimen `OK`/`FALLA`. T04–T07, T13, T14 y R14 trabajan dentro de una transacción y terminan en `ROLLBACK`, así que no dejan cambios; T08–T10 **confirma** sus cambios a propósito (crea facturas, pagos y una entrega) y solo debe correrse en una base personal; T03, T11 y T12 son consultas de verificación.
 - `85_datos_escenarios.sql` verifica al final los conteos mínimos, los escenarios obligatorios y la coherencia de fechas, y falla si algo no se cumple.
 - CI en GitHub (`.github/workflows/db-build.yml`): cada PR que toca `database/` construye la base desde cero en SQL Server con el script maestro y los datos de prueba (incluidas las verificaciones de `85`); sin el check `sql` en verde no se puede mezclar a `master`.
 - El plan con resultado esperado y obtenido de cada prueba está en `docs/PLAN_PRUEBAS.md`.
