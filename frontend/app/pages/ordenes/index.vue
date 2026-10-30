@@ -28,7 +28,10 @@ const estados = [
     .filter(([codigo]) => !['ENTREGADO', 'CANCELADO'].includes(codigo))
     .map(([value, e]) => ({ label: e.texto, value })),
 ]
-const filtro = reactive({ estado: 'TODOS', texto: '' })
+// /ordenes?estado=LISTO llega ya filtrada (la usan los tramos de la línea del taller en Inicio)
+const route = useRoute()
+const estadoInicial = String(route.query.estado ?? '')
+const filtro = reactive({ estado: estados.some((e) => e.value === estadoInicial) ? estadoInicial : 'TODOS', texto: '' })
 
 const ordenes = ref<Orden[]>([])
 const cargando = ref(true)

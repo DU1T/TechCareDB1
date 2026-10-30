@@ -49,6 +49,7 @@ export default defineNuxtConfig({
         'lucide:undo-2',
         'lucide:refresh-cw',
         'lucide:check',
+        'lucide:arrow-right',
       ],
     },
   },
