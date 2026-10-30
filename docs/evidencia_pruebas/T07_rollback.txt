@@ -1,0 +1,17 @@
+resultado
+---------
+OK     A: el movimiento que no cuadra lo rechaza CK_Movimiento_Cuadre -> error 547
+OK     A: con XACT_ABORT ON la transacción queda condenada (XACT_STATE = -1)
+OK     A: tras el ROLLBACK la existencia sigue en 4 (antes 4)
+OK     A: no quedó ningún movimiento ni transacción abierta
+OK     B: sin XACT_ABORT el error 547 deja la transacción abierta (1) y confirmable (XACT_STATE = 1)
+OK     B: el descuento ya estaba hecho sin su movimiento (4 -> 3): un COMMIT lo dejaría a medias
+OK     B: tras el ROLLBACK manual la existencia vuelve a 4
+OK     C: el ajuste se aplicó dentro de la transacción (4 -> 5)
+OK     C: luego el consumo de 104 falla -> error 50106
+OK     C: también se deshizo el ajuste: existencia 4 y el kárdex sin movimientos nuevos
+
+resumen
+-------
+T07: 10 OK, 0 FALLA
+

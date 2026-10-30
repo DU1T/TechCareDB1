@@ -1,0 +1,20 @@
+OK    I01  Existencia negativa  -> error 547: The UPDATE statement conflicted with the CHECK constraint "CK_Inventario_Existencia". The conflict occurred in database "TechCare_Pruebas", table "dbo.Inventario", column 'existencia'.
+OK    I02  Movimiento de kárdex que no cuadra (14 - 2 = 20)  -> error 547: The INSERT statement conflicted with the CHECK constraint "CK_Movimiento_Cuadre". The conflict occurred in database "TechCare_Pruebas", table "dbo.MovimientoInventario".
+OK    I03  Borrar un movimiento del kárdex  -> error 51010: Los movimientos de inventario no se modifican ni eliminan; registre un ajuste.
+OK    I04  Modificar un movimiento del kárdex  -> error 51010: Los movimientos de inventario no se modifican ni eliminan; registre un ajuste.
+OK    I05  Segunda factura para una orden que ya tiene  -> error 2627: Violation of UNIQUE KEY constraint 'UQ_Factura_Orden'. Cannot insert duplicate key in object 'dbo.Factura'. The duplicate key value is (4).
+OK    I06  Saltar de RECIBIDO a ENTREGADO  -> error 51002: Transición de estado no permitida para la orden.
+OK    I07  Marcar ENTREGADO una orden LISTO con saldo pendiente  -> error 51003: No se puede entregar: falta el registro de entrega, la factura o existe saldo pendiente.
+OK    I08  Pago que excede el saldo, insertado directo  -> error 51011: La suma de los pagos aplicados no puede exceder el total de la factura (R12).
+OK    I09  Pago con monto cero  -> error 547: The INSERT statement conflicted with the CHECK constraint "CK_Pago_Monto". The conflict occurred in database "TechCare_Pruebas", table "dbo.Pago", column 'monto'.
+OK    I10  Empresa con NIT CF  -> error 547: The INSERT statement conflicted with the CHECK constraint "CK_Cliente_NitEmpresa". The conflict occurred in database "TechCare_Pruebas", table "dbo.Cliente".
+OK    I11  Cliente sin teléfono ni correo  -> error 547: The INSERT statement conflicted with the CHECK constraint "CK_Cliente_Contacto". The conflict occurred in database "TechCare_Pruebas", table "dbo.Cliente".
+OK    I12  Número de serie repetido  -> error 2627: Violation of UNIQUE KEY constraint 'UQ_Equipo_NumeroSerie'. Cannot insert duplicate key in object 'dbo.Equipo'. The duplicate key value is (SN-00001).
+OK    I13  Equipo de un cliente que no existe  -> error 547: The INSERT statement conflicted with the FOREIGN KEY constraint "FK_Equipo_Cliente". The conflict occurred in database "TechCare_Pruebas", table "dbo.Cliente", column 'idCliente'.
+OK    I14  Borrar un cliente que tiene equipos (FK NO ACTION)  -> error 547: The DELETE statement conflicted with the REFERENCE constraint "FK_Equipo_Cliente". The conflict occurred in database "TechCare_Pruebas", table "dbo.Equipo", column 'idCliente'.
+OK    I15  Detalle de compra con cantidad cero  -> error 547: The UPDATE statement conflicted with the CHECK constraint "CK_DetalleCompra_Cantidad". The conflict occurred in database "TechCare_Pruebas", table "dbo.DetalleCompra", column 'cantidad'.
+OK    I16  Usuario de la aplicación cambia el stock directo  -> error 230: The UPDATE permission was denied on the column 'existencia' of the object 'Inventario', database 'TechCare_Pruebas', schema 'dbo'.
+OK    I17  Usuario de la aplicación inserta un pago directo  -> error 229: The INSERT permission was denied on the object 'Pago', database 'TechCare_Pruebas', schema 'dbo'.
+OK    I18  Subir directo el monto de un pago hasta pasar el total  -> error 51011: La suma de los pagos aplicados no puede exceder el total de la factura (R12).
+OK    I19  Pago directo de Q1 dentro del saldo (factura 20)  -> aceptado; saldo 234.20
+OK    I20  Pago directo que completa el total  -> aceptado; saldo 0.00
