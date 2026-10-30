@@ -55,8 +55,72 @@
   --color-acento-950: #3d2a00;
 }
 
+/*
+  Movimiento: las mismas duraciones y curvas en todo el sistema (en motion-v, utils/movimiento.ts).
+  - Lo que llega desacelera (ease-llega); lo que se va acelera (ease-se-va) y se va más rápido de lo que llegó.
+  - Rápido en lo que se usa (botones, filas, menús); lento solo en lo que se muestra (login, tablero, trazabilidad).
+  - Solo se anima transform y opacity: el navegador las mueve sin recalcular la página.
+  Tailwind crea las clases ease-llega, ease-se-va y ease-resorte.
+*/
+@theme static {
+  --ease-llega: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-se-va: cubic-bezier(0.4, 0, 1, 1);
+  --ease-resorte: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 :root {
   --ui-radius: 0.5rem;
+
+  --dur-rapida: 150ms; /* hover, foco, botones */
+  --dur-media: 250ms; /* menús, pestañas, entrar a una pantalla */
+  --dur-lenta: 450ms; /* paneles y tarjetas que llegan */
+  --dur-escena: 800ms; /* solo login, tablero y trazabilidad */
+}
+
+/* Cambio de pantalla (pageTransition en nuxt.config.ts): la nueva sube 8px mientras aparece; la vieja solo se desvanece */
+.pagina-enter-active {
+  transition:
+    opacity var(--dur-media) var(--ease-llega),
+    transform var(--dur-media) var(--ease-llega);
+}
+.pagina-leave-active {
+  transition: opacity var(--dur-rapida) var(--ease-se-va);
+}
+.pagina-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.pagina-leave-to {
+  opacity: 0;
+}
+
+/* Del login al sistema y de vuelta (layoutTransition): fundido del marco completo */
+.marco-enter-active {
+  transition: opacity var(--dur-lenta) var(--ease-llega);
+}
+.marco-leave-active {
+  transition: opacity var(--dur-media) var(--ease-se-va);
+}
+.marco-enter-from,
+.marco-leave-to {
+  opacity: 0;
+}
+
+/*
+  Reducir movimiento (ajuste del sistema operativo): todo aparece en su estado final, sin desplazarse.
+  1ms y no 0: así las transiciones de Vue siguen avisando que terminaron.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 body {
@@ -83,25 +147,36 @@ table,
   outline-color: var(--color-acento-400) !important;
 }
 
-/* Etiqueta del login: entra una sola vez al cargar la página */
-@keyframes etiqueta-entra {
+/*
+  Entrada escalonada (login, tablero): el bloque sube 10px mientras aparece.
+  style="--i: 2" lo retrasa 2 pasos de 60ms. Una sola vez al cargar; no usar en pantallas de trabajo.
+*/
+@keyframes entra {
   from {
     opacity: 0;
-    transform: translateY(-14px) rotate(-5deg);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) rotate(-2deg);
+    transform: translateY(10px);
   }
 }
-.etiqueta-servicio {
-  transform: rotate(-2deg);
-  animation: etiqueta-entra 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+.entra {
+  animation: entra var(--dur-lenta) var(--ease-llega) both;
+  animation-delay: calc(var(--i, 0) * 60ms + 120ms);
 }
-@media (prefers-reduced-motion: reduce) {
-  .etiqueta-servicio {
-    animation: none;
-  }
+
+/* <Transition name="aparece">: avisos y mensajes que aparecen (bajan 4px) y se van rápido */
+.aparece-enter-active {
+  transition:
+    opacity var(--dur-media) var(--ease-llega),
+    transform var(--dur-media) var(--ease-llega);
+}
+.aparece-leave-active {
+  transition: opacity var(--dur-rapida) var(--ease-se-va);
+}
+.aparece-enter-from {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+.aparece-leave-to {
+  opacity: 0;
 }
 
 /* Código de barras decorativo de la etiqueta */

@@ -6,7 +6,9 @@ export default defineNuxtConfig({
   // SPA: no hace falta renderizar en el servidor y el login con JWT es más simple
   ssr: false,
 
-  modules: ['@nuxt/ui', '@pinia/nuxt'],
+  // motion-v: animaciones con resorte y elementos que viajan (ya venía dentro de Nuxt UI).
+  // Registra <Motion>, <AnimatePresence>, <LayoutGroup>... sin import. Los ajustes comunes están en utils/movimiento.ts
+  modules: ['@nuxt/ui', '@pinia/nuxt', 'motion-v/nuxt'],
   css: ['~/assets/css/main.css'],
 
   // Una sola paleta (ver main.css), sin modo oscuro y sin fuentes externas:
@@ -46,6 +48,7 @@ export default defineNuxtConfig({
         'lucide:banknote',
         'lucide:undo-2',
         'lucide:refresh-cw',
+        'lucide:check',
       ],
     },
   },
@@ -62,6 +65,10 @@ export default defineNuxtConfig({
   },
 
   app: {
+    // Transición al cambiar de pantalla y al pasar del login al sistema (las clases están en main.css).
+    // 'out-in': la pantalla vieja termina de irse antes de que entre la nueva (sin dos pantallas encimadas).
+    pageTransition: { name: 'pagina', mode: 'out-in' },
+    layoutTransition: { name: 'marco', mode: 'out-in' },
     head: {
       title: 'TechCare',
       htmlAttrs: { lang: 'es' },

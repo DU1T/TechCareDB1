@@ -16,7 +16,20 @@ const schema = z.object({
 const state = reactive({ username: '', password: '' })
 const verClave = ref(false)
 const cargando = ref(false)
+const exito = ref(false)
 const error = ref('')
+
+// Lo que muestra la escena del panel verde (components/login/EscenaTaller.vue)
+const fase = computed(() => (exito.value ? 'listo' : cargando.value ? 'leyendo' : 'espera'))
+
+// Error: el formulario da una sacudida corta (como un "no" con la cabeza). Sin ella si se pidió reducir movimiento
+const reducido = useReducedMotion()
+const [alcance, animar] = useAnimate()
+// Pausas de la escena; con "reducir movimiento" no se espera nada
+const esperar = (ms: number) => new Promise((r) => setTimeout(r, reducido.value ? 0 : ms))
+function sacudir() {
+  if (!reducido.value && alcance.value) animar(alcance.value, { x: [0, -10, 9, -6, 4, 0] }, { duration: 0.42, ease: 'easeOut' })
+}
 
 // Solo en modo simulado: atajos para probar cada rol
 const PRUEBA = [
@@ -36,7 +49,11 @@ async function entrar() {
   error.value = ''
   cargando.value = true
   try {
-    await auth.login(state.username.trim(), state.password)
+    // El escáner de la etiqueta se ve al menos 450 ms aunque la API responda antes (corren a la vez)
+    await Promise.all([auth.login(state.username.trim(), state.password), esperar(450)])
+    // Un momento para ver el sello "Autorizado" antes de pasar al sistema
+    exito.value = true
+    await esperar(600)
     await navigateTo('/')
   } catch (e: any) {
     // Solo es "sin conexión" si la petición no obtuvo respuesta; un fallo nuestro no se disfraza de red
@@ -45,6 +62,7 @@ async function entrar() {
       : e?.name === 'FetchError'
         ? 'No hay conexión con el servidor. Revisa que la API esté encendida.'
         : 'La respuesta del servidor no tiene el formato esperado.'
+    sacudir()
   } finally {
     cargando.value = false
   }
@@ -53,51 +71,21 @@ async function entrar() {
 
 <template>
   <div class="grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)]">
-    <!-- 30 %: panel de marca con la etiqueta de servicio -->
-    <section
-      class="relative hidden overflow-hidden bg-placa-900 p-12 text-placa-50 lg:flex lg:flex-col lg:justify-between"
-      aria-hidden="true"
-    >
-      <div class="flex items-center gap-2.5">
-        <span class="grid size-8 place-items-center rounded-md bg-acento-500 font-bold text-bruma-950">T</span>
-        <span class="text-xl font-semibold tracking-tight text-white">TechCare</span>
-      </div>
+    <!-- 30 %: panel de marca con la escena de la etiqueta de servicio (solo en pantallas anchas) -->
+    <LoginEscenaTaller :fase="fase" />
 
-      <div class="etiqueta-servicio mx-auto w-full max-w-sm overflow-hidden rounded-xl bg-bruma-50 text-bruma-900 shadow-2xl shadow-placa-950/50">
-        <div class="relative bg-acento-500 px-6 pb-4 pt-7 text-bruma-950">
-          <span class="absolute left-1/2 top-2.5 size-3 -translate-x-1/2 rounded-full bg-placa-900" />
-          <p class="text-sm font-medium">Orden de servicio</p>
-          <p class="cifras mt-0.5 text-3xl font-bold tracking-tight">OS-000142</p>
-        </div>
-        <div class="space-y-3 px-6 py-5">
-          <div>
-            <p class="text-xs text-bruma-500">Equipo</p>
-            <p class="font-medium">Laptop 15 pulgadas, no enciende</p>
-          </div>
-          <div>
-            <p class="text-xs text-bruma-500">Estado</p>
-            <p class="font-medium">Listo para entregar</p>
-          </div>
-        </div>
-        <div class="mx-4 border-t-2 border-dashed border-bruma-300" />
-        <div class="codigo-barras mx-6 my-5 h-10 opacity-90" />
-      </div>
-
-      <p class="max-w-sm text-placa-200">
-        Recepción, taller, bodega y caja trabajan sobre la misma orden.
-      </p>
-    </section>
-
-    <!-- 60 %: formulario sobre fondo neutro -->
+    <!-- 60 %: formulario sobre fondo neutro. "entra" + --i: cada bloque llega un poco después del anterior -->
     <section class="flex items-center justify-center px-6 py-12">
-      <div class="w-full max-w-sm">
-        <div class="mb-10 flex items-center gap-2.5 lg:hidden">
+      <div ref="alcance" class="w-full max-w-sm">
+        <div class="entra mb-10 flex items-center gap-2.5 lg:hidden" style="--i: 0">
           <span class="grid size-8 place-items-center rounded-md bg-placa-900 font-bold text-acento-500">T</span>
           <span class="text-xl font-semibold tracking-tight">TechCare</span>
         </div>
 
-        <h1 class="text-2xl font-semibold tracking-tight">Iniciar sesión</h1>
-        <p class="mt-1 text-sm text-bruma-600">Entra con tu usuario del taller.</p>
+        <div class="entra" style="--i: 1">
+          <h1 class="text-2xl font-semibold tracking-tight">Iniciar sesión</h1>
+          <p class="mt-1 text-sm text-bruma-600">Entra con tu usuario del taller.</p>
+        </div>
 
         <!-- Sin validar al salir del campo: si no, el error aparece, la página se mueve y se pierde el clic -->
         <UForm
@@ -107,11 +95,11 @@ async function entrar() {
           class="mt-8 space-y-5"
           @submit="entrar"
         >
-          <UFormField label="Usuario" name="username">
+          <UFormField label="Usuario" name="username" class="entra" style="--i: 2">
             <UInput v-model="state.username" size="lg" class="w-full" autocomplete="username" autofocus />
           </UFormField>
 
-          <UFormField label="Contraseña" name="password">
+          <UFormField label="Contraseña" name="password" class="entra" style="--i: 3">
             <UInput
               v-model="state.password"
               :type="verClave ? 'text' : 'password'"
@@ -133,13 +121,26 @@ async function entrar() {
           </UFormField>
 
           <div aria-live="polite">
-            <UAlert v-if="error" color="error" variant="subtle" icon="i-lucide-circle-alert" :description="error" />
+            <Transition name="aparece">
+              <UAlert v-if="error" color="error" variant="subtle" icon="i-lucide-circle-alert" :description="error" />
+            </Transition>
           </div>
 
-          <UButton type="submit" color="secondary" size="lg" block :loading="cargando">Iniciar sesión</UButton>
+          <UButton
+            type="submit"
+            color="secondary"
+            size="lg"
+            block
+            class="entra"
+            style="--i: 4"
+            :loading="cargando && !exito"
+            :icon="exito ? 'i-lucide-check' : undefined"
+          >
+            {{ exito ? 'Listo' : 'Iniciar sesión' }}
+          </UButton>
         </UForm>
 
-        <div v-if="modoSimulado" class="mt-8 rounded-lg border border-bruma-200 bg-white p-4">
+        <div v-if="modoSimulado" class="entra mt-8 rounded-lg border border-bruma-200 bg-white p-4" style="--i: 5">
           <p class="text-sm font-medium">Modo simulado</p>
           <p class="mt-0.5 text-sm text-bruma-600">Elige un rol para rellenar el formulario. La contraseña es Demo2026!</p>
           <div class="mt-3 flex flex-wrap gap-2">
