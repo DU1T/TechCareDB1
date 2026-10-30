@@ -66,6 +66,7 @@ builder.Services.AddSingleton<SqlConnectionFactory>();
 builder.Services.AddScoped<OrdenesRepository>();
 builder.Services.AddScoped<InventarioRepository>();
 builder.Services.AddScoped<ReportesRepository>();
+builder.Services.AddScoped<FacturacionRepository>();
 
 builder.Services.AddSingleton<PasswordService>();
 builder.Services.AddSingleton<TokenService>();
