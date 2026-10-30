@@ -48,7 +48,7 @@ export const MENU: ItemMenu[] = [
     icono: 'i-lucide-wrench',
     grupo: 'Taller',
     permiso: 'REPORTE_VER',
-    listo: false,
+    listo: true,
   },
   {
     etiqueta: 'Caja',

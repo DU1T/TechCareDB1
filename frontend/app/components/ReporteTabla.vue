@@ -11,6 +11,7 @@ const props = defineProps<{
   columnas: ColumnaReporte[]
   filas: Record<string, any>[]
   cargando?: boolean
+  vacio?: string // texto cuando no hay filas (por omisión, el de los reportes con filtros)
 }>()
 
 const UBadge = resolveComponent('UBadge')
@@ -28,6 +29,7 @@ const COLOR_ESTADO: Record<string, 'success' | 'warning' | 'error' | 'info' | 'n
 const TEXTO_ESTADO: Record<string, string> = {
   ...Object.fromEntries(Object.entries(ESTADO_STOCK).map(([k, v]) => [k, v.texto])),
   ...Object.fromEntries(Object.entries(ESTADO_COMPRA).map(([k, v]) => [k, v.texto])),
+  ...Object.fromEntries(Object.entries(ESTADO_ORDEN).map(([k, v]) => [k, v.texto])),
 }
 // 'ESPERANDO_AUTORIZACION' -> 'Esperando autorizacion'
 const legible = (codigo: string) => TEXTO_ESTADO[codigo] ?? (codigo[0] + codigo.slice(1).toLowerCase()).replaceAll('_', ' ')
@@ -75,7 +77,7 @@ const columnasTabla = computed<TableColumn<Record<string, any>>[]>(() =>
         :data="filas"
         :columns="columnasTabla"
         :loading="cargando"
-        empty="El reporte no trae filas con esos filtros."
+        :empty="vacio ?? 'El reporte no trae filas con esos filtros.'"
         sticky
         class="max-h-[65dvh]"
       />

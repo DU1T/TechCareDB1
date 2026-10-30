@@ -176,4 +176,94 @@ public sealed class ReportesRepository
             },
             commandType: CommandType.StoredProcedure);
     }
+
+
+    // Reporte 10: facturas con saldo y pagos relacionados
+    public async Task<object> FacturasSaldoAsync(
+        bool incluirPagadas,
+        int? idCliente,
+        DateTime? fechaInicio,
+        DateTime? fechaFin)
+    {
+        await using var cn = _db.Create();
+
+        using var resultados = await cn.QueryMultipleAsync(
+            "dbo.sp_Reporte_10_FacturasSaldo",
+            new
+            {
+                soloConSaldo = !incluirPagadas,
+                idCliente,
+                fechaInicio,
+                fechaFin
+            },
+            commandType: CommandType.StoredProcedure);
+
+        var facturas = (await resultados.ReadAsync<dynamic>())
+            .ToList();
+
+        var pagos = (await resultados.ReadAsync<dynamic>())
+            .ToList();
+
+        return new
+        {
+            facturas,
+            pagos
+        };
+    }
+
+    // Reporte 11: ingresos agrupados por periodo
+    public async Task<IEnumerable<dynamic>> IngresosPeriodoAsync(
+        DateTime? fechaInicio,
+        DateTime? fechaFin)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QueryAsync(
+            "dbo.sp_Reporte_11_IngresosPeriodo",
+            new
+            {
+                fechaInicio,
+                fechaFin
+            },
+            commandType: CommandType.StoredProcedure);
+    }
+
+    // Reporte 12: trazabilidad completa de una orden
+    public async Task<object> TrazabilidadAsync(int idOrden)
+    {
+        await using var cn = _db.Create();
+
+        using var resultados = await cn.QueryMultipleAsync(
+            "dbo.sp_Reporte_12_Trazabilidad",
+            new { idOrden },
+            commandType: CommandType.StoredProcedure);
+
+        var encabezado =
+            await resultados.ReadFirstOrDefaultAsync<dynamic>();
+
+        var repuestos =
+            (await resultados.ReadAsync<dynamic>()).ToList();
+
+        var movimientos =
+            (await resultados.ReadAsync<dynamic>()).ToList();
+
+        var pagos =
+            (await resultados.ReadAsync<dynamic>()).ToList();
+
+        var historial =
+            (await resultados.ReadAsync<dynamic>()).ToList();
+
+        return new
+        {
+            encabezado,
+            repuestos,
+            movimientos,
+            pagos,
+            historial
+        };
+    }
+
+
+
+
 }
