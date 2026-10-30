@@ -6,6 +6,7 @@ const route = useRoute()
 const config = useRuntimeConfig()
 
 const menuAbierto = ref(false)
+const buscador = ref(false)
 const modoSimulado = computed(() => config.public.modoSimulado === true)
 watch(() => route.fullPath, () => { menuAbierto.value = false })
 
@@ -38,15 +39,17 @@ const titulo = computed(() => String(route.meta.titulo ?? 'TechCare'))
 
 <template>
   <div class="min-h-dvh lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
-    <div
-      v-if="menuAbierto"
-      class="fixed inset-0 z-30 bg-placa-950/60 lg:hidden"
-      aria-hidden="true"
-      @click="menuAbierto = false"
-    />
+    <Transition name="marco">
+      <div
+        v-if="menuAbierto"
+        class="fixed inset-0 z-30 bg-placa-950/60 lg:hidden"
+        aria-hidden="true"
+        @click="menuAbierto = false"
+      />
+    </Transition>
 
     <aside
-      class="menu-oscuro fixed inset-y-0 left-0 z-40 flex w-[17rem] flex-col bg-placa-900 text-placa-100 transition-[transform,visibility] duration-200 motion-reduce:transition-none lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0"
+      class="menu-oscuro fixed inset-y-0 left-0 z-40 flex w-[17rem] flex-col bg-placa-900 text-placa-100 transition-[translate,visibility] duration-300 ease-llega motion-reduce:transition-none lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0"
       :class="menuAbierto ? 'translate-x-0' : '-translate-x-full invisible lg:visible'"
       aria-label="Menú principal"
     >
@@ -64,13 +67,20 @@ const titulo = computed(() => String(route.meta.titulo ?? 'TechCare'))
                 v-if="item.listo"
                 :to="item.ruta"
                 class="relative flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors motion-reduce:transition-none"
-                :class="rutaActiva === item.ruta
-                  ? 'bg-placa-800 font-medium text-white before:absolute before:inset-y-1.5 before:-left-3 before:w-1 before:rounded-r before:bg-acento-500'
-                  : 'text-placa-100 hover:bg-placa-800 hover:text-white'"
+                :class="rutaActiva === item.ruta ? 'font-medium text-white' : 'text-placa-100 hover:bg-placa-800/60 hover:text-white'"
                 :aria-current="rutaActiva === item.ruta ? 'page' : undefined"
               >
-                <UIcon :name="item.icono" class="size-5 shrink-0" />
-                {{ item.etiqueta }}
+                <!-- Marca del ítem activo: es UNA sola pieza (layout-id) que viaja de un ítem a otro con resorte -->
+                <Motion
+                  v-if="rutaActiva === item.ruta"
+                  layout-id="menu-activo"
+                  class="absolute inset-0 rounded-md bg-placa-800"
+                  :transition="RESORTE"
+                >
+                  <span class="absolute inset-y-1.5 -left-3 w-1 rounded-r bg-acento-500" />
+                </Motion>
+                <UIcon :name="item.icono" class="relative size-5 shrink-0" />
+                <span class="relative">{{ item.etiqueta }}</span>
               </NuxtLink>
               <span
                 v-else
@@ -114,9 +124,28 @@ const titulo = computed(() => String(route.meta.titulo ?? 'TechCare'))
           aria-label="Abrir menú"
           @click="menuAbierto = true"
         />
-        <h1 class="text-base font-semibold tracking-tight">{{ titulo }}</h1>
+        <Transition name="aparece" mode="out-in">
+          <h1 :key="titulo" class="text-base font-semibold tracking-tight">{{ titulo }}</h1>
+        </Transition>
         <UBadge v-if="modoSimulado" color="neutral" variant="outline" class="ml-auto">API simulada</UBadge>
+        <UButton
+          color="neutral"
+          variant="outline"
+          icon="i-lucide-search"
+          :class="modoSimulado ? '' : 'ml-auto'"
+          aria-label="Buscar pantallas y órdenes"
+          aria-keyshortcuts="Control+K Meta+K"
+          @click="buscador = true"
+        >
+          <span class="hidden text-bruma-600 sm:inline">Buscar</span>
+          <span class="hidden gap-0.5 sm:flex">
+            <UKbd value="meta" />
+            <UKbd value="K" />
+          </span>
+        </UButton>
       </header>
+
+      <BuscadorRapido v-model:open="buscador" />
 
       <main class="flex-1 px-4 py-6 lg:px-8">
         <slot />
