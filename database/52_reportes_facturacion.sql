@@ -192,7 +192,8 @@ BEGIN
            r.descripcionTrabajo,
            trep.nombreCompleto      AS tecnicoReparacion,
            r.costoManoObra,
-           CONCAT(f.serie, '-', RIGHT('000000' + CAST(f.numero AS VARCHAR(10)), 6)) AS numeroFactura,
+           CASE WHEN f.idFactura IS NULL THEN NULL
+                ELSE CONCAT(f.serie, '-', RIGHT('000000' + CAST(f.numero AS VARCHAR(10)), 6)) END AS numeroFactura,
            f.fechaEmision,
            f.subtotal,
            f.impuesto,
