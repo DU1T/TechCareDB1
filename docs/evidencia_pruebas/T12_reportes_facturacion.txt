@@ -1,0 +1,145 @@
+--- Reporte 10: facturas con saldo (2 resultados: facturas, pagos) ---
+numeroFactura fechaEmision numeroOrden cliente nitFacturacion total totalPagado saldo estadoPago
+------------- ------------ ----------- ------- -------------- ----- ----------- ----- ----------
+A-000027 2026-09-09 16:20:00 OS-000029 Clínica San Rafael 1213813-7 470.40 0.00 470.40 PENDIENTE
+A-000026 2026-09-08 16:20:00 OS-000028 Bufete Morales y Asociados 1205894-6 459.20 0.00 459.20 PENDIENTE
+A-000030 2026-09-13 16:20:00 OS-000032 Ferretería La Unión 1237570-0 504.00 126.00 378.00 PARCIAL
+A-000029 2026-09-12 16:20:00 OS-000031 Hotel Las Flores 1229651-9 492.80 123.20 369.60 PARCIAL
+A-000028 2026-09-11 16:20:00 OS-000030 Agroexport Jalapa, S.A. 1221732-8 481.60 120.40 361.20 PARCIAL
+A-000025 2026-09-07 16:20:00 OS-000027 Café Altiplano 1197975-5 448.00 179.20 268.80 PARCIAL
+A-000024 2026-09-05 16:20:00 OS-000026 Constructora Maya, S.A. 1190056-4 436.80 174.72 262.08 PARCIAL
+A-000023 2026-09-04 16:20:00 OS-000025 Farmacia Central 1182137-3 425.60 170.24 255.36 PARCIAL
+A-000022 2026-09-02 16:20:00 OS-000024 Colegio Los Pinos 1174218-2 414.40 165.76 248.64 PARCIAL
+A-000021 2026-09-01 16:20:00 OS-000023 Distribuidora El Sol, S.A. 1166299-1 403.20 161.28 241.92 PARCIAL
+A-000020 2026-08-31 16:20:00 OS-000022 Ana García 1158380-0 392.00 156.80 235.20 PARCIAL
+
+numeroFactura fechaPago metodoPago monto referencia estadoPago cajero motivoAnulacion
+------------- --------- ---------- ----- ---------- ---------- ------ ---------------
+A-000020 2026-08-31 17:05:00 EFECTIVO 156.80 NULL APLICADO Cajero Dos NULL
+A-000021 2026-09-01 17:05:00 TARJETA 161.28 AUT-21-1 APLICADO Cajero Uno NULL
+A-000022 2026-09-02 17:05:00 TRANSFERENCIA 165.76 AUT-22-1 APLICADO Cajero Dos NULL
+A-000023 2026-09-04 17:05:00 CHEQUE 170.24 AUT-23-1 APLICADO Cajero Uno NULL
+A-000024 2026-09-05 17:05:00 EFECTIVO 174.72 NULL APLICADO Cajero Dos NULL
+A-000025 2026-09-07 16:50:00 CHEQUE 44.80 AUT-25-3 ANULADO Cajero Uno Pago registrado por error de captura
+A-000025 2026-09-07 17:20:00 TARJETA 179.20 AUT-25-1 APLICADO Cajero Uno NULL
+A-000028 2026-09-11 17:05:00 EFECTIVO 120.40 NULL APLICADO Cajero Dos NULL
+A-000029 2026-09-12 17:05:00 TARJETA 123.20 AUT-29-1 APLICADO Cajero Uno NULL
+A-000030 2026-09-13 17:05:00 TRANSFERENCIA 126.00 AUT-30-1 APLICADO Cajero Dos NULL
+
+--- Reporte 10: todas las facturas, rango de fechas ---
+numeroFactura fechaEmision numeroOrden cliente nitFacturacion total totalPagado saldo estadoPago
+------------- ------------ ----------- ------- -------------- ----- ----------- ----- ----------
+A-000027 2026-09-09 16:20:00 OS-000029 Clínica San Rafael 1213813-7 470.40 0.00 470.40 PENDIENTE
+A-000026 2026-09-08 16:20:00 OS-000028 Bufete Morales y Asociados 1205894-6 459.20 0.00 459.20 PENDIENTE
+A-000030 2026-09-13 16:20:00 OS-000032 Ferretería La Unión 1237570-0 504.00 126.00 378.00 PARCIAL
+A-000029 2026-09-12 16:20:00 OS-000031 Hotel Las Flores 1229651-9 492.80 123.20 369.60 PARCIAL
+A-000028 2026-09-11 16:20:00 OS-000030 Agroexport Jalapa, S.A. 1221732-8 481.60 120.40 361.20 PARCIAL
+A-000025 2026-09-07 16:20:00 OS-000027 Café Altiplano 1197975-5 448.00 179.20 268.80 PARCIAL
+A-000024 2026-09-05 16:20:00 OS-000026 Constructora Maya, S.A. 1190056-4 436.80 174.72 262.08 PARCIAL
+A-000023 2026-09-04 16:20:00 OS-000025 Farmacia Central 1182137-3 425.60 170.24 255.36 PARCIAL
+A-000022 2026-09-02 16:20:00 OS-000024 Colegio Los Pinos 1174218-2 414.40 165.76 248.64 PARCIAL
+A-000021 2026-09-01 16:20:00 OS-000023 Distribuidora El Sol, S.A. 1166299-1 403.20 161.28 241.92 PARCIAL
+A-000020 2026-08-31 16:20:00 OS-000022 Ana García 1158380-0 392.00 156.80 235.20 PARCIAL
+A-000001 2026-08-05 16:20:00 OS-000003 Luis López 1007919-1 1159.20 1159.20 0.00 PAGADA
+A-000002 2026-08-06 16:20:00 OS-000004 María López 1015838-2 582.40 582.40 0.00 PAGADA
+A-000003 2026-08-07 16:20:00 OS-000005 Carlos López 1023757-3 672.00 672.00 0.00 PAGADA
+A-000004 2026-08-09 16:20:00 OS-000006 Sofía López 1031676-4 817.60 817.60 0.00 PAGADA
+A-000005 2026-08-10 16:20:00 OS-000007 José López CF 515.20 515.20 0.00 PAGADA
+A-000006 2026-08-11 16:20:00 OS-000008 Lucía López 1047514-6 789.60 789.60 0.00 PAGADA
+A-000007 2026-08-13 16:20:00 OS-000009 Pedro López 1055433-7 1198.40 1198.40 0.00 PAGADA
+A-000008 2026-08-14 16:20:00 OS-000010 Elena López 1063352-8 1366.40 1366.40 0.00 PAGADA
+A-000009 2026-08-16 16:20:00 OS-000011 Jorge López 1071271-9 1892.80 1892.80 0.00 PAGADA
+A-000010 2026-08-17 16:20:00 OS-000012 Ana Pérez CF 588.00 588.00 0.00 PAGADA
+A-000011 2026-08-18 16:20:00 OS-000013 Luis Pérez 1087109-1 1019.20 1019.20 0.00 PAGADA
+A-000012 2026-08-20 16:20:00 OS-000014 María Pérez 1095028-2 571.20 571.20 0.00 PAGADA
+A-000013 2026-08-21 16:20:00 OS-000015 Carlos Pérez 1102947-3 313.60 313.60 0.00 PAGADA
+A-000014 2026-08-22 16:20:00 OS-000016 Sofía Pérez 1110866-4 324.80 324.80 0.00 PAGADA
+A-000015 2026-08-24 16:20:00 OS-000017 José Pérez 1118785-5 336.00 336.00 0.00 PAGADA
+A-000016 2026-08-25 16:20:00 OS-000018 Lucía Pérez 1126704-6 347.20 347.20 0.00 PAGADA
+A-000017 2026-08-27 16:20:00 OS-000019 Pedro Pérez 1134623-7 358.40 358.40 0.00 PAGADA
+A-000018 2026-08-28 16:20:00 OS-000020 Elena Pérez 1142542-8 369.60 369.60 0.00 PAGADA
+A-000019 2026-08-29 16:20:00 OS-000021 Jorge Pérez 1150461-9 380.80 380.80 0.00 PAGADA
+
+numeroFactura fechaPago metodoPago monto referencia estadoPago cajero motivoAnulacion
+------------- --------- ---------- ----- ---------- ---------- ------ ---------------
+A-000001 2026-08-05 17:05:00 TARJETA 1159.20 AUT-1-1 APLICADO Cajero Uno NULL
+A-000002 2026-08-06 17:05:00 TRANSFERENCIA 582.40 AUT-2-1 APLICADO Cajero Dos NULL
+A-000003 2026-08-07 17:05:00 CHEQUE 672.00 AUT-3-1 APLICADO Cajero Uno NULL
+A-000004 2026-08-09 17:05:00 EFECTIVO 817.60 NULL APLICADO Cajero Dos NULL
+A-000005 2026-08-10 17:05:00 TARJETA 515.20 AUT-5-1 APLICADO Cajero Uno NULL
+A-000006 2026-08-11 17:05:00 TRANSFERENCIA 789.60 AUT-6-1 APLICADO Cajero Dos NULL
+A-000007 2026-08-13 17:05:00 CHEQUE 1198.40 AUT-7-1 APLICADO Cajero Uno NULL
+A-000008 2026-08-14 17:05:00 EFECTIVO 1366.40 NULL APLICADO Cajero Dos NULL
+A-000009 2026-08-16 17:05:00 TARJETA 1892.80 AUT-9-1 APLICADO Cajero Uno NULL
+A-000010 2026-08-17 17:05:00 TRANSFERENCIA 588.00 AUT-10-1 APLICADO Cajero Dos NULL
+A-000011 2026-08-18 16:42:00 CHEQUE 339.73 AUT-11-1 APLICADO Cajero Uno NULL
+A-000011 2026-08-18 17:05:00 EFECTIVO 339.73 NULL APLICADO Cajero Uno NULL
+A-000011 2026-08-18 17:27:00 TARJETA 339.74 AUT-11-3 APLICADO Cajero Uno NULL
+A-000012 2026-08-20 16:42:00 EFECTIVO 190.40 NULL APLICADO Cajero Dos NULL
+A-000012 2026-08-20 17:05:00 TARJETA 190.40 AUT-12-2 APLICADO Cajero Dos NULL
+A-000012 2026-08-20 17:27:00 TRANSFERENCIA 190.40 AUT-12-3 APLICADO Cajero Dos NULL
+A-000013 2026-08-21 16:42:00 TARJETA 104.53 AUT-13-1 APLICADO Cajero Uno NULL
+A-000013 2026-08-21 17:05:00 TRANSFERENCIA 104.53 AUT-13-2 APLICADO Cajero Uno NULL
+A-000013 2026-08-21 17:27:00 CHEQUE 104.54 AUT-13-3 APLICADO Cajero Uno NULL
+A-000014 2026-08-22 16:50:00 TRANSFERENCIA 162.40 AUT-14-1 APLICADO Cajero Dos NULL
+A-000014 2026-08-22 17:20:00 CHEQUE 162.40 AUT-14-2 APLICADO Cajero Dos NULL
+A-000015 2026-08-24 16:50:00 CHEQUE 168.00 AUT-15-1 APLICADO Cajero Uno NULL
+A-000015 2026-08-24 17:20:00 EFECTIVO 168.00 NULL APLICADO Cajero Uno NULL
+A-000016 2026-08-25 16:50:00 EFECTIVO 173.60 NULL APLICADO Cajero Dos NULL
+A-000016 2026-08-25 17:20:00 TARJETA 173.60 AUT-16-2 APLICADO Cajero Dos NULL
+A-000017 2026-08-27 16:50:00 TARJETA 179.20 AUT-17-1 APLICADO Cajero Uno NULL
+A-000017 2026-08-27 17:20:00 TRANSFERENCIA 179.20 AUT-17-2 APLICADO Cajero Uno NULL
+A-000018 2026-08-28 16:50:00 TRANSFERENCIA 184.80 AUT-18-1 APLICADO Cajero Dos NULL
+A-000018 2026-08-28 17:20:00 CHEQUE 184.80 AUT-18-2 APLICADO Cajero Dos NULL
+A-000019 2026-08-29 16:50:00 CHEQUE 190.40 AUT-19-1 APLICADO Cajero Uno NULL
+A-000019 2026-08-29 17:20:00 EFECTIVO 190.40 NULL APLICADO Cajero Uno NULL
+A-000020 2026-08-31 17:05:00 EFECTIVO 156.80 NULL APLICADO Cajero Dos NULL
+A-000021 2026-09-01 17:05:00 TARJETA 161.28 AUT-21-1 APLICADO Cajero Uno NULL
+A-000022 2026-09-02 17:05:00 TRANSFERENCIA 165.76 AUT-22-1 APLICADO Cajero Dos NULL
+A-000023 2026-09-04 17:05:00 CHEQUE 170.24 AUT-23-1 APLICADO Cajero Uno NULL
+A-000024 2026-09-05 17:05:00 EFECTIVO 174.72 NULL APLICADO Cajero Dos NULL
+A-000025 2026-09-07 16:50:00 CHEQUE 44.80 AUT-25-3 ANULADO Cajero Uno Pago registrado por error de captura
+A-000025 2026-09-07 17:20:00 TARJETA 179.20 AUT-25-1 APLICADO Cajero Uno NULL
+A-000028 2026-09-11 17:05:00 EFECTIVO 120.40 NULL APLICADO Cajero Dos NULL
+A-000029 2026-09-12 17:05:00 TARJETA 123.20 AUT-29-1 APLICADO Cajero Uno NULL
+A-000030 2026-09-13 17:05:00 TRANSFERENCIA 126.00 AUT-30-1 APLICADO Cajero Dos NULL
+
+--- Reporte 11: ingresos por mes ---
+anio mes periodo facturas ingresoManoObra ingresoRepuestos subtotal impuesto total
+---- --- ------- -------- --------------- ---------------- -------- -------- -----
+2026 8 2026-08 20 5100.00 7395.00 12495.00 1499.40 13994.40
+2026 9 2026-09 10 4050.00 0.00 4050.00 486.00 4536.00
+
+--- Reporte 12: trazabilidad (5 resultados) ---
+idOrden numeroOrden fechaIngreso estado prioridad problemaReportado cliente nitCliente tipoEquipo marca modelo numeroSerie recepcionista fechaDiagnostico diagnostico tecnicoDiagnostico costoManoObraEstimado respuestaCliente inicioReparacion finReparacion estadoReparacion descripcionTrabajo tecnicoReparacion costoManoObra idFactura numeroFactura fechaEmision subtotal impuesto total totalPagado saldo fechaEntrega nombreRecibe entregadoPor
+------- ----------- ------------ ------ --------- ----------------- ------- ---------- ---------- ----- ------ ----------- ------------- ---------------- ----------- ------------------ --------------------- ---------------- ---------------- ------------- ---------------- ------------------ ----------------- ------------- --------- ------------- ------------ -------- -------- ----- ----------- ----- ------------ ------------ ------------
+13 OS-000013 2026-08-18 08:00:00 ENTREGADO ALTA Equipo presenta fallas de funcionamiento, rendimiento o encendido. Luis Pérez 1087109-1 Computadora de escritorio HP HP Lite 111 SN-00011 Recepcionista Uno 2026-08-18 12:00:00 Se realizaron pruebas de funcionamiento y revision de componentes. Se recomienda mantenimiento o reparacion tecnica. Tecnico Uno 150.00 AUTORIZADO 2026-08-18 14:00:00 2026-08-18 16:00:00 FINALIZADA Se realizaron reparaciones, mantenimiento correctivo y pruebas de funcionamiento satisfactorias. Tecnico Uno 260.00 11 A-000011 2026-08-18 16:20:00 910.00 109.20 1019.20 1019.20 0.00 2026-08-18 18:00:00 Luis Pérez Recepcionista Uno
+
+bodega codigo repuesto cantidad precioUnitario subtotal estado fechaRegistro registradoPor
+------ ------ -------- -------- -------------- -------- ------ ------------- -------------
+Bodega Central RAM-003 Memoria DDR5 16 GB 1 650.00 650.00 APLICADO 2026-08-18 14:50:00 Tecnico Uno
+
+fechaMovimiento tipo origen bodega codigo repuesto cantidad existenciaAnterior existenciaResultante usuario
+--------------- ---- ------ ------ ------ -------- -------- ------------------ -------------------- -------
+2026-08-18 14:50:00 SALIDA REPARACION Bodega Central RAM-003 Memoria DDR5 16 GB 1 7 6 Tecnico Uno
+
+idPago fechaPago metodoPago monto referencia estado cajero motivoAnulacion
+------ --------- ---------- ----- ---------- ------ ------ ---------------
+11 2026-08-18 16:42:00 CHEQUE 339.73 AUT-11-1 APLICADO Cajero Uno NULL
+12 2026-08-18 17:05:00 EFECTIVO 339.73 NULL APLICADO Cajero Uno NULL
+13 2026-08-18 17:27:00 TARJETA 339.74 AUT-11-3 APLICADO Cajero Uno NULL
+
+estadoAnterior estadoNuevo fechaCambio usuario observacion
+-------------- ----------- ----------- ------- -----------
+NULL RECIBIDO 2026-08-18 08:00:00 Recepcionista Uno Orden registrada
+RECIBIDO DIAGNOSTICO 2026-08-18 10:00:00 Tecnico Uno Inicio del diagnostico tecnico
+DIAGNOSTICO ESPERANDO_AUTORIZACION 2026-08-18 12:00:00 Tecnico Uno Diagnostico registrado; pendiente de autorizacion
+ESPERANDO_AUTORIZACION REPARACION 2026-08-18 14:00:00 Tecnico Uno Reparacion iniciada
+REPARACION LISTO 2026-08-18 16:00:00 Tecnico Uno Reparacion finalizada
+LISTO ENTREGADO 2026-08-18 18:00:00 Recepcionista Uno Entrega a Luis Pérez
+
+--- Verificaciones ---
+OK  R10: facturas con saldo coinciden con fn_SaldoFactura
+OK  R11: el total del reporte coincide con las facturas emitidas
+OK  R12: orden inexistente -> 50327
+OK  R11: fechas invertidas -> 50325

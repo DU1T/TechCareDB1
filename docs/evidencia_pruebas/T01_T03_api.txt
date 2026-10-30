@@ -1,0 +1,29 @@
+Evidencia T01–T03 por la API (vie 30 oct 2026). Base TechCare_Pruebas construida desde master 04b78c5; API conectada como techcare_app (rol_app).
+
+### T01 · Registrar un cliente y dos equipos (recepcion1)
+[200] POST /clientes {"tipoCliente":"EMPRESA","nit":"7788990-1","nombre":"Laboratorio Prueba T01, S.A.","telefono":"22334455","email":"t01@prueba.test","direccion":"Zona 4, Guatemala"}  ->  {"idCliente":33,"tipoCliente":"EMPRESA","nit":"7788990-1","nombre":"Laboratorio Prueba T01, S.A.","estado":"ACTIVO"}
+[200] POST /equipos {"idCliente":33,"idTipoEquipo":1,"idMarca":1,"modelo":"Latitude 5440","numeroSerie":"T01-SERIE-A","descripcion":"Laptop con cargador"}  ->  {"idEquipo":71,"idCliente":33,"numeroSerie":"T01-SERIE-A","estado":"ACTIVO"}
+[200] POST /equipos {"idCliente":33,"idTipoEquipo":3,"idMarca":2,"modelo":"LaserJet M404","numeroSerie":"T01-SERIE-B","descripcion":"Impresora"}  ->  {"idEquipo":72,"idCliente":33,"numeroSerie":"T01-SERIE-B","estado":"ACTIVO"}
+[200] GET /clientes/33/equipos   ->  [{"idEquipo":72,"idCliente":33,"cliente":"Laboratorio Prueba T01, S.A.","idTipoEquipo":3,"tipoEquipo":"Impresora","idMarca":2,"marca":"HP","modelo":"LaserJet M404","numeroSerie":"T01-SERIE-B","descripcion":"Impresora","estado":"ACTIVO","fechaRegistro":"2026-10-30T07:20:40"},{"idEquipo":71,"idCliente":33,"cliente":"Laboratorio Prueba T01, S.A.","idTipoEquipo":1,"tipoEquipo":"Laptop","idMarca":1,"marca":"Dell","modelo":"Latitude 5440","numeroSerie":"T01-SERIE-A","descripcion":"Laptop con cargador","estado":"ACTIVO","fechaRegistro":"2026-10-30T07:20:40"}]
+
+### T02 · Crear una orden para uno de los equipos y comprobar su estado inicial (recepcion1)
+[200] POST /ordenes {"idEquipo":71,"problemaReportado":"No enciende después de una descarga eléctrica","prioridad":"ALTA","fechaEstimada":"2026-11-06","observaciones":"Cliente deja cargador"}  ->  {"idOrden":63,"numeroOrden":"OS-000063"}
+-- SQL (orden, estado, recepcionista, cliente, serie):
+63|OS-000063|RECIBIDO|ALTA|recepcion1|Laboratorio Prueba T01, S.A.|T01-SERIE-A
+
+-- SQL (historial):
+NULL|RECIBIDO|Orden registrada
+
+
+### T03 · Registrar diagnóstico con técnico responsable y cambiar la orden de estado (tecnico1)
+[200] POST /ordenes/63/diagnostico {"descripcion":"Fuente de poder dañada por sobrevoltaje; requiere reemplazo.","costoManoObraEstimado":250}  ->  {"idDiagnostico":49,"idOrden":63,"estado":"ESPERANDO_AUTORIZACION","mensaje":"Diagnostico registrado correctamente"}
+-- SQL (estado, técnico, costo):
+ESPERANDO_AUTORIZACION|49|tecnico1|250.00
+
+-- SQL (historial con usuario):
+NULL|RECIBIDO|recepcion1
+RECIBIDO|DIAGNOSTICO|tecnico1
+DIAGNOSTICO|ESPERANDO_AUTORIZACION|tecnico1
+
+-- Diagnóstico por recepcion1 (sin permiso) -> debe rechazarse:
+[403] POST /ordenes/63/diagnostico {"descripcion":"x","costoManoObraEstimado":1}  ->  {"error":"No tiene permiso para realizar esta acción."}

@@ -1,0 +1,98 @@
+# TechCare Solutions · Plan y evidencia de pruebas
+
+Entregable 08: casos funcionales (T01–T14 del enunciado) y de integridad (R14, R16), con resultado esperado, resultado obtenido y la salida real como evidencia.
+
+## 1. Cómo se ejecutaron
+
+| | |
+| --- | --- |
+| Fecha | viernes 30 de octubre de 2026 |
+| Versión | `master` `04b78c5` (incluye el trigger `trg_Pago_NoExcedeTotal`, PR #38) |
+| Base | `TechCare_Pruebas` construida desde cero (script maestro + datos de prueba + `92`, los mismos pasos de `reconstruir.ps1`) en SQL Server 2022 (Docker), más `90_seguridad.sql` (usuario `techcare_app` en `rol_app`) |
+| API | ASP.NET Core 8 conectada como `techcare_app` (mínimo privilegio), igual que en producción |
+| Scripts | `database/pruebas/*.sql`, ejecutados con `sqlcmd` como `sa`; T01–T03 por la API con usuarios de cada rol |
+| Evidencia | `docs/evidencia_pruebas/<prueba>.txt`: salida completa, sin editar |
+
+**Resultado global: 119 verificaciones en OK, 0 FALLA** (20 de integridad directa, 13 de R14, 15 de T04–T05, 14 de T06, 10 de T07, 18 de T08–T10, 4 de T12, 11 de T13, 13 de T14, T01–T03 y T11).
+
+Para repetirlas en una base personal: construir la base (`database/reconstruir.ps1`), abrir cada script de `database/pruebas/` y ejecutarlo; cada uno imprime `OK` o `FALLA` por verificación. T04–T07, T13, T14, R14 y R16 terminan en `ROLLBACK` (no dejan cambios); **T08–T10 confirma cambios** y se niega a correr en la base compartida `TechCare`.
+
+## 2. Pruebas funcionales del enunciado (T01–T14)
+
+| Prueba | Escenario | Cómo | Resultado esperado | Resultado obtenido | Evidencia |
+| --- | --- | --- | --- | --- | --- |
+| **T01** | Registrar un cliente y dos equipos | API `POST /clientes` y 2 × `POST /equipos` con `recepcion1` | Cliente creado con sus 2 equipos | ✅ Cliente 33 (empresa, NIT 7788990-1) con equipos 71 y 72; `GET /clientes/33/equipos` los devuelve | `T01_T03_api.txt` |
+| **T02** | Crear una orden y comprobar su estado inicial | API `POST /ordenes` con `recepcion1` | Orden en RECIBIDO con cliente, equipo, recepcionista y primera fila de historial | ✅ OS-000063 en RECIBIDO, prioridad ALTA, recepción `recepcion1`; historial `NULL → RECIBIDO "Orden registrada"` | `T01_T03_api.txt` |
+| **T03** | Registrar diagnóstico con técnico responsable y cambiar el estado | API `POST /ordenes/63/diagnostico` con `tecnico1` | Diagnóstico con técnico; orden a ESPERANDO_AUTORIZACION; historial con el usuario; un rol sin permiso es rechazado | ✅ Diagnóstico 49 de `tecnico1` (Q 250); historial `RECIBIDO → DIAGNOSTICO → ESPERANDO_AUTORIZACION` por `tecnico1`; `recepcion1` → 403 | `T01_T03_api.txt` |
+| **T04** | Usar un repuesto sin stock suficiente | `T04_T05_consumo_repuesto.sql` | Rechazo sin cambios parciales | ✅ Sin stock → 50106; cantidad 0 → 50101; usuario no técnico → 50102; reparación finalizada → 50103; repuesto fuera de la bodega → 50104. Inventario, repuestos usados y kárdex iguales que antes; ninguna transacción abierta | `T04_T05_consumo_repuesto.txt` |
+| **T05** | Usar un repuesto con stock | mismo script | Detalle de reparación + salida de inventario + movimiento | ✅ Detalle con precio 350.00 y costo 210.00 del momento; existencia 4 → 3; movimiento SALIDA/REPARACION enlazado al detalle y encadenado al anterior; consumir el resto deja SIN_STOCK; existencia = suma del kárdex | `T04_T05_consumo_repuesto.txt` |
+| **T06** | Registrar una compra con varios repuestos y recibirla | `T06_compra_recepcion.sql` | Inventario sube y se generan movimientos de entrada | ✅ Compra en PENDIENTE con costo propio por línea (no el del catálogo); registrar no mueve inventario; al recibir, existencias suben en lo comprado, un repuesto nuevo obtiene su fila en la bodega y hay 1 ENTRADA/COMPRA por línea (3 de 3). Errores (rol, sin líneas, documento repetido, recibir dos veces) sin dejar nada | `T06_compra_recepcion.txt` |
+| **T07** | Provocar un error en una operación transaccional | `T07_rollback.sql` | Todo se revierte con ROLLBACK | ✅ A: movimiento que no cuadra → 547 y con `XACT_ABORT ON` la transacción queda condenada; existencia sin cambio. B: sin `XACT_ABORT` el descuento quedaría a medias (por eso los SP lo usan). C: ajuste + consumo fallido (50106) → también se deshace el ajuste | `T07_rollback.txt` |
+| **T08** | Generar una factura desde una orden terminada | `T08_T10_facturacion.sql` | Total = mano de obra + repuestos + 12 % | ✅ total = subtotal + 12 %; segunda factura → 50313; orden no LISTO → 50312; usuario sin rol de caja → 50301 | `T08_T10_facturacion.txt` |
+| **T09** | Dos pagos parciales y saldo restante | mismo script | El saldo baja con cada pago | ✅ Saldo 343.47 → 171.74 → 0 (el tercer pago completa); factura ya pagada → 50307; entrega con saldo → 50324 | `T08_T10_facturacion.txt` |
+| **T10** | Pago que excede el saldo | mismo script | Rechazado | ✅ Pago mayor al saldo → 50308; tarjeta sin referencia → 50304; ningún pago insertado. Además: anulación sin motivo → 50315, pago anulado (no borrado) y saldo de vuelta, anular dos veces → 50317, anular tras entregar → 50318, `UPDATE` directo a ENTREGADO → 51003 | `T08_T10_facturacion.txt` |
+| **T11** | Historial completo de un equipo con varias órdenes | `T11_historial_equipo.sql` (reporte 3, SN-00001) | Las 3 órdenes, incluidas las que no tienen diagnóstico ni factura | ✅ 3 órdenes (2 CANCELADO sin diagnóstico, 1 ENTREGADO con reparación y factura); 2 órdenes sin factura se conservan | `T11_historial_equipo.txt` |
+| **T12** | Trazabilidad completa de una orden | `T12_reportes_facturacion.sql` (reportes 10, 11 y 12) | Datos de cliente a pagos; totales consistentes; errores controlados | ✅ Reporte 10 coincide con `fn_SaldoFactura`; total del reporte 11 = facturas emitidas; la salida incluye la trazabilidad completa de una orden (encabezado, repuestos, movimientos, pagos e historial); orden inexistente → 50327; fechas invertidas → 50325 | `T12_reportes_facturacion.txt` |
+| **T13** | Repuestos bajo el stock mínimo en distintas bodegas | `T13_estado_stock.sql` | Estado correcto por bodega y en el dashboard | ✅ `estadoStock` correcto en las 90 filas; BAJO_MINIMO en las 3 bodegas; dashboard = vista (30 → 31 tras el ajuste); existencia = mínimo → BAJO_MINIMO, 0 → SIN_STOCK, mínimo + 1 → OK; cada ajuste deja su movimiento | `T13_estado_stock.txt` |
+| **T14** | Un cambio de precio no modifica los históricos | `T14_precio_historico.sql` | Facturas, detalles y compras anteriores iguales; el cambio queda auditado | ✅ Precio 450.00 → 495.00; facturas, líneas, repuestos usados, costos de compra y kárdex sin diferencias; auditoría con antes/después y el usuario de la aplicación; un `UPDATE` sin cambio de precio no audita | `T14_precio_historico.txt` |
+
+## 3. Pruebas de integridad
+
+### R14 · Nada transaccional se borra (`R14_kardex_inmutable.sql`)
+
+| Caso | Esperado | Obtenido |
+| --- | --- | --- |
+| `DELETE` de un movimiento, de todo el kárdex, `UPDATE` de cantidad o de la observación | Rechazo | ✅ Los 4 → 51010; el kárdex sigue con 145 movimientos y el movimiento 1 sin cambios |
+| Corregir con un ajuste | Movimiento nuevo, encadenado | ✅ AJUSTE SALIDA de 1 con motivo, 4 → 3; existencia = suma del kárdex |
+| `DELETE` de una factura con pagos o de una compra recibida | Rechazo por FK | ✅ Ambos → 547 |
+
+Evidencia: `R14_kardex_inmutable.txt` (13 OK).
+
+### R16 · Restricciones activas aunque se escriba directo en SQL (`R16_integridad_directa.sql`)
+
+Cada caso se ejecuta directo, sin procedimientos, dentro de una transacción que termina en ROLLBACK.
+
+| Caso | Operación directa | Esperado | Obtenido |
+| --- | --- | --- | --- |
+| I01 | `UPDATE Inventario SET existencia = -1` | Rechazo | ✅ 547 `CK_Inventario_Existencia` |
+| I02 | Movimiento cuya existencia resultante no cuadra | Rechazo | ✅ 547 `CK_Movimiento_Cuadre` |
+| I03–I04 | Borrar o modificar un movimiento del kárdex | Rechazo | ✅ 51010 trigger |
+| I05 | Segunda factura para la misma orden (R11) | Rechazo | ✅ 2627 `UQ_Factura_Orden` |
+| I06 | Saltar de RECIBIDO a ENTREGADO | Rechazo | ✅ 51002 transición no permitida |
+| I07 | Marcar ENTREGADO una orden con saldo | Rechazo | ✅ 51003 |
+| I08 | `INSERT` de un pago de Q 99,999 sobre una factura con saldo (R12) | Rechazo | ✅ 51011 `trg_Pago_NoExcedeTotal` |
+| I09 | Pago con monto 0 | Rechazo | ✅ 547 `CK_Pago_Monto` |
+| I10 | Empresa con NIT CF | Rechazo | ✅ 547 `CK_Cliente_NitEmpresa` |
+| I11 | Cliente sin teléfono ni correo | Rechazo | ✅ 547 `CK_Cliente_Contacto` |
+| I12 | Número de serie repetido | Rechazo | ✅ 2627 `UQ_Equipo_NumeroSerie` |
+| I13 | Equipo de un cliente inexistente | Rechazo | ✅ 547 `FK_Equipo_Cliente` |
+| I14 | Borrar un cliente con equipos | Rechazo (FK `NO ACTION`) | ✅ 547 `FK_Equipo_Cliente` |
+| I15 | Detalle de compra con cantidad 0 | Rechazo | ✅ 547 `CK_DetalleCompra_Cantidad` |
+| I16 | `techcare_app` cambia el stock directo | Rechazo por permisos | ✅ 230: UPDATE denegado en `Inventario.existencia` |
+| I17 | `techcare_app` inserta un pago directo | Rechazo por permisos | ✅ 229: INSERT denegado en `Pago` |
+| I18 | Subir directo el monto de un pago por encima del total | Rechazo | ✅ 51011 |
+| I19 | Pago directo de Q 1 dentro del saldo | **Aceptado** | ✅ Aceptado (saldo baja en Q 1) |
+| I20 | Pago directo que completa el total exacto | **Aceptado** | ✅ Aceptado (saldo 0.00) |
+
+Evidencia: `R16_integridad_directa.txt` (20 OK, 0 FALLA).
+
+## 4. Pruebas de la aplicación web
+
+Además de los scripts, cada pantalla se probó al revisar su PR con la API real (permisos de `rol_app`) y la web compilada, en Chrome automatizado (Playwright), y se repitió un recorrido en la URL pública:
+
+| Flujo | Resultado |
+| --- | --- |
+| Taller (PR #36): orden de RECIBIDO a factura con `tecnico1`, `recepcion1` y `caja1` | ✅ Diagnóstico → autoriza → iniciar → usar 2 repuestos (la pantalla avisa si se pide más de lo que hay) → actividad → finalizar → factura de Q 896.00 = (180 + 2 × 310) × 1.12 |
+| Rechazo del cliente | ✅ La orden pasa a LISTO y caja la entrega sin factura (no hubo reparación) |
+| Caja y acciones de la orden (PR #28–#34) | ✅ Facturar con NIT opcional, pago parcial y total, anular con motivo, entrega bloqueada con saldo; los datos coinciden en SQL |
+| Inventario, kárdex, compras (PR #15, #19) | ✅ Ajuste, compra y recepción mueven el stock y aparecen en el kárdex; 0 saltos, 0 descuadres |
+| Permisos por rol | ✅ Cada rol ve solo su menú y sus botones (por ejemplo, recepción no entra a `/compras`, técnico no ve caja, bodega no ve el taller) |
+| Recorrido en https://techcare-api-grupo-bhl.azurewebsites.net (`v1.0.1`) | ✅ 5 roles, reportes 1–12, caja, órdenes y trazabilidad, celular; consola del navegador sin errores |
+
+## 5. Hallazgos durante las pruebas
+
+| Hallazgo | Acción |
+| --- | --- |
+| I08: un pago escrito directo en SQL podía superar el total (R12 solo lo validaba `sp_RegistrarPago`) | Corregido con `trg_Pago_NoExcedeTotal` (PR #38); I08 e I18 ahora dan 51011 e I19–I20 confirman que los pagos válidos siguen entrando |
+| `T03_flujo_reparacion.sql` revisa una orden creada a mano en la base personal de B | T03 se probó por la API sobre la base de prueba (sección 2) |
+| Las fechas se guardan con `SYSDATETIME()` y el servidor (Docker, Azure SQL) está en UTC | Lo registrado después de las 18:00 de Guatemala aparece con la fecha del día siguiente; documentado en el manual técnico, no afecta reglas ni totales |

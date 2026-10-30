@@ -1,0 +1,18 @@
+resultado
+---------
+OK     estadoStock correcto en las 90 filas (diferencias: 0)
+OK     hay BAJO_MINIMO en varias bodegas (3)
+OK     dashboard: repuestosBajoMinimo = 30 (vista: 30)
+OK     existencia = mínimo (2) -> BAJO_MINIMO
+OK     dashboard sube de 30 a 31
+OK     existencia = 0 -> SIN_STOCK
+OK     mismo repuesto en otra bodega sigue en OK (antes OK)
+OK     SIN_STOCK ahora en 2 bodegas
+OK     existencia = mínimo + 1 -> OK
+OK     cada ajuste dejó su movimiento AJUSTE en el kárdex (3)
+OK     después del ROLLBACK la existencia vuelve a 13
+
+resumen
+-------
+T13: 11 OK, 0 FALLA
+
