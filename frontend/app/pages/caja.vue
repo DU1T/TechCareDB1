@@ -26,13 +26,16 @@ const api = useApi()
 const texto = ref('')
 const facturas = ref<FacturaSaldo[]>([])
 const cargando = ref(true)
+const fallo = ref(false) // la carga falló: no se debe confundir con "no hay deudas"
 
 async function cargar() {
   cargando.value = true
+  fallo.value = false
   try {
     facturas.value = await api<FacturaSaldo[]>('/facturas', { query: { conSaldo: true } })
   } catch {
     facturas.value = []
+    fallo.value = true // useApi ya mostró el aviso
   } finally {
     cargando.value = false
   }
@@ -71,14 +74,14 @@ function pedirPago(f: FacturaSaldo) {
       <UFormField label="Buscar" class="w-full sm:w-72">
         <UInput v-model="texto" icon="i-lucide-search" placeholder="Factura, orden, cliente o NIT" class="w-full" />
       </UFormField>
-      <p v-if="!cargando" class="text-sm text-bruma-600 sm:ml-auto">
+      <p v-if="!cargando && !fallo" class="text-sm text-bruma-600 sm:ml-auto">
         {{ visibles.length }} {{ visibles.length === 1 ? 'factura' : 'facturas' }} con saldo ·
         por cobrar <strong class="text-highlighted">{{ quetzales(porCobrar) }}</strong>
       </p>
     </div>
 
     <div class="overflow-hidden rounded-lg border border-bruma-200 bg-white">
-      <UTable :data="visibles" :columns="columnas" :loading="cargando" empty="No hay facturas con saldo pendiente." sticky class="max-h-[70dvh]">
+      <UTable :data="visibles" :columns="columnas" :loading="cargando" :empty="fallo ? 'No se pudo cargar la lista de facturas. Intenta de nuevo.' : 'No hay facturas con saldo pendiente.'" sticky class="max-h-[70dvh]">
         <template #numeroFactura-cell="{ row }">
           <span class="block font-medium text-highlighted">{{ row.original.numeroFactura }}</span>
           <span class="block text-xs text-bruma-500">{{ row.original.numeroOrden }} · {{ fecha(row.original.fechaEmision) }}</span>
@@ -99,6 +102,10 @@ function pedirPago(f: FacturaSaldo) {
           <UButton size="xs" color="secondary" icon="i-lucide-banknote" @click="pedirPago(row.original)">Cobrar</UButton>
         </template>
       </UTable>
+    </div>
+
+    <div v-if="fallo && !cargando" class="flex justify-center">
+      <UButton color="neutral" variant="outline" icon="i-lucide-refresh-cw" @click="cargar">Reintentar</UButton>
     </div>
 
     <FormPago v-model:open="pago.abierto" :factura="pago.factura" @pagado="cargar" />
