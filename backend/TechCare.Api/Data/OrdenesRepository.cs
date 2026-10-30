@@ -33,31 +33,74 @@ public sealed class OrdenesRepository
             commandType: CommandType.StoredProcedure);
     }
 
-    // Consulta el detalle completo de una orden y su historial.
+    // Detalle completo de una orden, historial, factura y entrega.
     public async Task<object?> DetalleAsync(int idOrden)
     {
         await using var cn = _db.Create();
 
-        using var resultados = await cn.QueryMultipleAsync(
+        dynamic? orden;
+        List<dynamic> historial;
+
+        // Conservamos los dos resultados del SP existente.
+        using (var resultados = await cn.QueryMultipleAsync(
             "dbo.sp_DetalleOrden",
             new { idOrden },
-            commandType: CommandType.StoredProcedure);
+            commandType: CommandType.StoredProcedure))
+        {
+            orden = await resultados.ReadFirstOrDefaultAsync<dynamic>();
 
-        // Primer conjunto: datos de la orden
-        var orden = await resultados.ReadFirstOrDefaultAsync<dynamic>();
-
-        // Segundo conjunto: historial de estados
-        var historial = (await resultados.ReadAsync<dynamic>()).ToList();
+            historial = (await resultados.ReadAsync<dynamic>())
+                .ToList();
+        }
 
         if (orden is null)
         {
             return null;
         }
 
+        // Factura y saldo calculado desde la vista oficial.
+        const string sqlFactura = """
+            SELECT
+                idFactura,
+                numeroFactura,
+                fechaEmision,
+                total,
+                totalPagado,
+                saldo,
+                estadoPago
+            FROM dbo.vw_FacturasSaldo
+            WHERE idOrden = @idOrden;
+            """;
+
+        var factura = await cn.QueryFirstOrDefaultAsync(
+            sqlFactura,
+            new { idOrden });
+
+        // Información de entrega, si la orden ya fue entregada.
+        const string sqlEntrega = """
+            SELECT
+                e.idEntrega,
+                e.fechaEntrega,
+                e.nombreRecibe,
+                e.documentoRecibe,
+                e.observaciones,
+                u.nombreCompleto AS entregadoPor
+            FROM dbo.Entrega AS e
+            INNER JOIN dbo.Usuario AS u
+                ON u.idUsuario = e.idUsuarioEntrega
+            WHERE e.idOrden = @idOrden;
+            """;
+
+        var entrega = await cn.QueryFirstOrDefaultAsync(
+            sqlEntrega,
+            new { idOrden });
+
         return new
         {
             orden,
-            historial
+            historial,
+            factura,
+            entrega
         };
     }
 
