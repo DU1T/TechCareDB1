@@ -44,6 +44,7 @@ export default defineNuxtConfig({
         'lucide:printer',
         'lucide:route',
         'lucide:banknote',
+        'lucide:undo-2',
         'lucide:refresh-cw',
       ],
     },

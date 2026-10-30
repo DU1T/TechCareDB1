@@ -166,7 +166,8 @@ BEGIN
         THROW 50327, 'La orden no existe.', 1;
 
     -- 1) Encabezado
-    SELECT o.numeroOrden,
+    SELECT o.idOrden,
+           o.numeroOrden,
            o.fechaIngreso,
            o.estado,
            o.prioridad,
@@ -192,6 +193,7 @@ BEGIN
            r.descripcionTrabajo,
            trep.nombreCompleto      AS tecnicoReparacion,
            r.costoManoObra,
+           f.idFactura,
            CASE WHEN f.idFactura IS NULL THEN NULL
                 ELSE CONCAT(f.serie, '-', RIGHT('000000' + CAST(f.numero AS VARCHAR(10)), 6)) END AS numeroFactura,
            f.fechaEmision,
@@ -253,7 +255,8 @@ BEGIN
     ORDER BY mv.fechaMovimiento, mv.idMovimiento;
 
     -- 4) Pagos de la factura de la orden (aplicados y anulados)
-    SELECT p.fechaPago,
+    SELECT p.idPago,
+           p.fechaPago,
            mp.nombre         AS metodoPago,
            p.monto,
            p.referencia,

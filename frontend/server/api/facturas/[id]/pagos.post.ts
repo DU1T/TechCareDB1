@@ -1,5 +1,5 @@
 // API SIMULADA de POST /facturas/{id}/pagos -> { idPago, saldoRestante }
-import { FACTURAS, METODOS, saldoDe } from '../../../utils/simuladoCaja'
+import { FACTURAS, METODOS, PAGOS, recalcular, saldoDe } from '../../../utils/simuladoCaja'
 
 export default defineEventHandler(async (event) => {
   requerirSimulado(event)
@@ -15,6 +15,8 @@ export default defineEventHandler(async (event) => {
   if (saldo === 0) return fallo(409, 'La factura ya está pagada.')
   if (Math.round(body.monto * 100) > Math.round(saldo * 100)) return fallo(409, 'El pago excede el saldo pendiente de la factura (R12).')
 
-  f.totalPagado = Math.round((f.totalPagado + body.monto) * 100) / 100
-  return { idPago: Date.now() % 100000, saldoRestante: saldoDe(f) }
+  const idPago = Math.max(0, ...PAGOS.map((p) => p.idPago)) + 1
+  PAGOS.push({ idPago, idFactura: f.idFactura, idMetodoPago: metodo.idMetodoPago, monto: body.monto, referencia: body.referencia?.trim() || null, fechaPago: new Date().toISOString(), estado: 'APLICADO', motivoAnulacion: null })
+  recalcular(f)
+  return { idPago, saldoRestante: saldoDe(f) }
 })

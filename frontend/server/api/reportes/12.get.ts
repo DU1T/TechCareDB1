@@ -1,15 +1,20 @@
 /*
   API SIMULADA de GET /reportes/12?idOrden= (misma forma que la real: 5 resultados con nombre).
-  Orden 1: completa y entregada. Orden 2: recién recibida (sin diagnóstico ni factura). Otras: 404.
+  Orden 1: completa y entregada. Orden 2: recién recibida. Órdenes 4 y 24: con estado, para probar las acciones. Otras: 404.
 */
+import { trazabilidadSimulada } from '../../utils/simuladoOrdenes'
+
 export default defineEventHandler((event) => {
   requerirSimulado(event)
   const id = Number(getQuery(event).idOrden)
 
+  const dinamica = trazabilidadSimulada(id)
+  if (dinamica) return dinamica
+
   if (id === 1) {
     return {
       encabezado: {
-        numeroOrden: 'OS-000001', fechaIngreso: '2026-10-10T08:00:00', estado: 'ENTREGADO', prioridad: 'ALTA',
+        idOrden: 1, idFactura: 1001, numeroOrden: 'OS-000001', fechaIngreso: '2026-10-10T08:00:00', estado: 'ENTREGADO', prioridad: 'ALTA',
         problemaReportado: 'No enciende después de una caída', cliente: 'María López', nitCliente: '1234567-8',
         tipoEquipo: 'Laptop', marca: 'Lenovo', modelo: 'ThinkPad E14', numeroSerie: 'PF3KX812',
         recepcionista: 'Recepcionista Uno', fechaDiagnostico: '2026-10-10T10:00:00',
@@ -27,8 +32,8 @@ export default defineEventHandler((event) => {
         { fechaMovimiento: '2026-10-10T14:50:00', tipo: 'SALIDA', origen: 'REPARACION', bodega: 'Bodega Central', codigo: 'RAM-003', repuesto: 'Memoria DDR5 16 GB', cantidad: 1, existenciaAnterior: 7, existenciaResultante: 6, usuario: 'Técnico Uno' },
       ],
       pagos: [
-        { fechaPago: '2026-10-10T16:42:00', metodoPago: 'CHEQUE', monto: 448, referencia: 'AUT-1-1', estado: 'APLICADO', cajero: 'Cajero Uno', motivoAnulacion: null },
-        { fechaPago: '2026-10-10T17:05:00', metodoPago: 'EFECTIVO', monto: 448, referencia: null, estado: 'APLICADO', cajero: 'Cajero Uno', motivoAnulacion: null },
+        { idPago: 9001, fechaPago: '2026-10-10T16:42:00', metodoPago: 'CHEQUE', monto: 448, referencia: 'AUT-1-1', estado: 'APLICADO', cajero: 'Cajero Uno', motivoAnulacion: null },
+        { idPago: 9002, fechaPago: '2026-10-10T17:05:00', metodoPago: 'EFECTIVO', monto: 448, referencia: null, estado: 'APLICADO', cajero: 'Cajero Uno', motivoAnulacion: null },
       ],
       historial: [
         { estadoAnterior: null, estadoNuevo: 'RECIBIDO', fechaCambio: '2026-10-10T08:00:00', usuario: 'Recepcionista Uno', observacion: 'Orden registrada' },
@@ -43,7 +48,7 @@ export default defineEventHandler((event) => {
   if (id === 2) {
     return {
       encabezado: {
-        numeroOrden: 'OS-000002', fechaIngreso: '2026-10-26T14:10:00', estado: 'RECIBIDO', prioridad: 'MEDIA',
+        idOrden: 2, idFactura: null, numeroOrden: 'OS-000002', fechaIngreso: '2026-10-26T14:10:00', estado: 'RECIBIDO', prioridad: 'MEDIA',
         problemaReportado: 'Pantalla rota', cliente: 'Carlos Méndez', nitCliente: 'CF', tipoEquipo: 'Celular', marca: 'Samsung',
         modelo: 'A54', numeroSerie: 'R58T1XJ2', recepcionista: 'Recepcionista Uno', fechaDiagnostico: null, diagnostico: null,
         tecnicoDiagnostico: null, costoManoObraEstimado: null, respuestaCliente: null, inicioReparacion: null, finReparacion: null,

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui'
 import type { ColumnaReporte } from '~/utils/reportes'
 
 /*
@@ -19,26 +20,30 @@ type Trazabilidad = {
 
 const route = useRoute()
 const api = useApi()
+const auth = useAuthStore()
 const id = Number(route.params.id)
 
 const datos = ref<Trazabilidad | null>(null)
 const cargando = ref(true)
 const noExiste = ref(false)
 
-onMounted(async () => {
+async function cargar(silencioso = false) {
   if (!Number.isSafeInteger(id) || id <= 0) {
     noExiste.value = true
     cargando.value = false
     return
   }
+  if (!silencioso) cargando.value = true
   try {
     datos.value = await api<Trazabilidad>('/reportes/12', { query: { idOrden: id } })
+    noExiste.value = false
   } catch {
     noExiste.value = true // useApi mostró el motivo (404: la orden no existe)
   } finally {
     cargando.value = false
   }
-})
+}
+onMounted(() => cargar())
 
 const e = computed<Fila>(() => datos.value?.encabezado ?? {})
 const estado = computed(() => ESTADO_ORDEN[e.value.estado] ?? { texto: e.value.estado ?? '', color: 'neutral' as const })
@@ -100,6 +105,57 @@ const etapas = computed<{ titulo: string; hecha: boolean; vacio: string; datos: 
   ]
 })
 
+
+// ---- Acciones sobre la orden. Los botones solo aparecen cuando el estado las permite y el rol tiene el permiso;
+// aun así, la regla de verdad la aplican los procedimientos almacenados (si algo no se cumple, se ve su mensaje).
+const tieneFactura = computed(() => !!e.value.idFactura)
+const saldo = computed(() => Number(e.value.saldo ?? 0))
+const esListo = computed(() => e.value.estado === 'LISTO')
+const puedeFacturar = computed(() => esListo.value && !tieneFactura.value && auth.puede('FACTURA_EMITIR'))
+const puedeCobrar = computed(() => tieneFactura.value && saldo.value > 0 && e.value.estado !== 'CANCELADO' && auth.puede('PAGO_REGISTRAR'))
+const puedeEntregar = computed(() => esListo.value && auth.puede('ENTREGA_REGISTRAR'))
+const entregaBloqueada = computed(() => tieneFactura.value && saldo.value > 0)
+const puedeAnular = computed(() => e.value.estado !== 'ENTREGADO' && auth.puede('PAGO_REGISTRAR'))
+const hayAcciones = computed(() => puedeFacturar.value || puedeCobrar.value || puedeEntregar.value)
+
+const modal = reactive({
+  facturar: false,
+  pagar: false,
+  entregar: false,
+  anular: false,
+  pago: null as { idPago: number; monto: number; metodoPago: string } | null,
+})
+const ordenAccion = computed(() => ({
+  idOrden: id,
+  numeroOrden: String(e.value.numeroOrden ?? ''),
+  cliente: String(e.value.cliente ?? ''),
+  nitCliente: String(e.value.nitCliente ?? ''),
+}))
+const facturaPago = computed(() => ({
+  idFactura: Number(e.value.idFactura),
+  numeroFactura: String(e.value.numeroFactura ?? ''),
+  cliente: String(e.value.cliente ?? ''),
+  saldo: saldo.value,
+}))
+function pedirAnulacion(p: Fila) {
+  modal.pago = { idPago: p.idPago, monto: p.monto, metodoPago: p.metodoPago }
+  modal.anular = true
+}
+
+const columnasPagos = computed<TableColumn<Fila>[]>(() => {
+  const base: TableColumn<Fila>[] = [
+    { accessorKey: 'fechaPago', header: 'Fecha' },
+    { accessorKey: 'metodoPago', header: 'Método' },
+    { accessorKey: 'monto', header: 'Monto', meta: { class: { th: 'text-right', td: 'text-right cifras' } } },
+    { accessorKey: 'referencia', header: 'Referencia' },
+    { accessorKey: 'estado', header: 'Estado' },
+    { accessorKey: 'cajero', header: 'Cajero' },
+    { accessorKey: 'motivoAnulacion', header: 'Motivo de anulación' },
+  ]
+  if (puedeAnular.value) base.push({ id: 'acciones', header: '', meta: { class: { th: 'no-imprimir', td: 'no-imprimir text-right' } } })
+  return base
+})
+
 const imprimir = () => window.print()
 
 function legibleRespuesta(v: string | null | undefined) {
@@ -127,15 +183,6 @@ const colMovimientos: ColumnaReporte[] = [
   { clave: 'existenciaAnterior', etiqueta: 'Antes', formato: 'numero' },
   { clave: 'existenciaResultante', etiqueta: 'Después', formato: 'numero' },
   { clave: 'usuario', etiqueta: 'Usuario' },
-]
-const colPagos: ColumnaReporte[] = [
-  { clave: 'fechaPago', etiqueta: 'Fecha', formato: 'fechaHora' },
-  { clave: 'metodoPago', etiqueta: 'Método' },
-  { clave: 'monto', etiqueta: 'Monto', formato: 'moneda' },
-  { clave: 'referencia', etiqueta: 'Referencia' },
-  { clave: 'estado', etiqueta: 'Estado', formato: 'estado' },
-  { clave: 'cajero', etiqueta: 'Cajero' },
-  { clave: 'motivoAnulacion', etiqueta: 'Motivo de anulación' },
 ]
 const colHistorial: ColumnaReporte[] = [
   { clave: 'fechaCambio', etiqueta: 'Fecha', formato: 'fechaHora' },
@@ -169,6 +216,28 @@ const colHistorial: ColumnaReporte[] = [
         <span class="text-sm text-bruma-600">Prioridad {{ String(e.prioridad ?? '').toLowerCase() }}</span>
       </header>
 
+
+      <section v-if="hayAcciones" class="no-imprimir flex flex-wrap items-center gap-2 rounded-lg border border-bruma-200 bg-white p-3" aria-label="Acciones de la orden">
+        <span class="mr-1 text-sm font-medium text-bruma-600">Acciones</span>
+        <UButton v-if="puedeFacturar" color="secondary" icon="i-lucide-receipt" @click="modal.facturar = true">Emitir factura</UButton>
+        <UButton v-if="puedeCobrar" :color="puedeFacturar ? 'neutral' : 'secondary'" :variant="puedeFacturar ? 'outline' : 'solid'" icon="i-lucide-banknote" @click="modal.pagar = true">
+          Registrar pago
+        </UButton>
+        <UButton
+          v-if="puedeEntregar"
+          color="neutral"
+          variant="outline"
+          icon="i-lucide-package-check"
+          :disabled="entregaBloqueada"
+          @click="modal.entregar = true"
+        >
+          Entregar equipo
+        </UButton>
+        <span v-if="puedeEntregar && entregaBloqueada" class="text-sm text-bruma-600">
+          Para entregar falta cobrar {{ quetzales(saldo) }}.
+        </span>
+      </section>
+
       <div class="grid gap-4 md:grid-cols-2">
         <section
           v-for="et in etapas"
@@ -192,8 +261,34 @@ const colHistorial: ColumnaReporte[] = [
 
       <ReporteTabla titulo="Repuestos usados" :columnas="colRepuestos" :filas="datos.repuestos" vacio="No se usaron repuestos en esta orden." />
       <ReporteTabla titulo="Movimientos de inventario" :columnas="colMovimientos" :filas="datos.movimientos" vacio="Sin movimientos de inventario." />
-      <ReporteTabla titulo="Pagos" :columnas="colPagos" :filas="datos.pagos" vacio="Sin pagos registrados." />
+      <section class="space-y-2">
+        <h3 class="font-semibold">Pagos</h3>
+        <div class="overflow-hidden rounded-lg border border-bruma-200 bg-white">
+          <UTable :data="datos.pagos" :columns="columnasPagos" empty="Sin pagos registrados.">
+            <template #fechaPago-cell="{ row }">{{ fechaYHora(row.original.fechaPago) }}</template>
+            <template #monto-cell="{ row }">{{ quetzales(row.original.monto) }}</template>
+            <template #referencia-cell="{ row }">{{ row.original.referencia ?? '—' }}</template>
+            <template #estado-cell="{ row }">
+              <UBadge :color="ESTADO_REGISTRO_PAGO[row.original.estado]?.color ?? 'neutral'" variant="subtle">
+                {{ ESTADO_REGISTRO_PAGO[row.original.estado]?.texto ?? row.original.estado }}
+              </UBadge>
+            </template>
+            <template #motivoAnulacion-cell="{ row }">{{ row.original.motivoAnulacion ?? '—' }}</template>
+            <template #acciones-cell="{ row }">
+              <UButton v-if="row.original.estado === 'APLICADO'" size="xs" color="neutral" variant="outline" icon="i-lucide-undo-2" @click="pedirAnulacion(row.original)">
+                Anular
+              </UButton>
+            </template>
+          </UTable>
+        </div>
+        <p class="text-sm text-bruma-600">{{ numero(datos.pagos.length) }} {{ datos.pagos.length === 1 ? 'fila' : 'filas' }}</p>
+      </section>
       <ReporteTabla titulo="Historial de estados" :columnas="colHistorial" :filas="datos.historial" vacio="Sin cambios de estado." />
+
+      <FormFacturar v-if="puedeFacturar" v-model:open="modal.facturar" :orden="ordenAccion" @hecho="cargar(true)" />
+      <FormPago v-if="puedeCobrar" v-model:open="modal.pagar" :factura="facturaPago" @pagado="cargar(true)" />
+      <FormEntrega v-if="puedeEntregar" v-model:open="modal.entregar" :orden="ordenAccion" @hecho="cargar(true)" />
+      <FormAnularPago v-if="puedeAnular" v-model:open="modal.anular" :pago="modal.pago" @hecho="cargar(true)" />
     </template>
   </div>
 </template>
