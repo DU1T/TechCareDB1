@@ -9,16 +9,26 @@
     useReacomodo(tabla, () => visibles.value)
     <div ref="tabla"><UTable :data="visibles" … /></div>
 
-  Con "reducir movimiento" no anima. Solo usa transform y opacity.
+  Para una lista que no es tabla: useReacomodo(lista, fuente, { selector: 'li' }) (la clave es el texto del elemento).
+  Las filas de "cargando" y "vacío" de la tabla no cuentan. Con "reducir movimiento" no anima.
+  Solo usa transform y opacity.
 */
-export function useReacomodo(
-  raiz: Ref<HTMLElement | null>,
-  fuente: WatchSource,
-  clave: (fila: HTMLTableRowElement) => string = (fila) => fila.cells[0]?.textContent?.trim() ?? '',
-) {
+type Opciones = {
+  selector?: string
+  clave?: (fila: HTMLElement) => string
+}
+
+export function useReacomodo(raiz: Ref<HTMLElement | null>, fuente: WatchSource, opciones: Opciones = {}) {
+  const selector = opciones.selector ?? 'tbody tr'
+  const clave =
+    opciones.clave ??
+    ((fila: HTMLElement) => (fila instanceof HTMLTableRowElement ? fila.cells[0]?.textContent : fila.textContent)?.trim() ?? '')
+
   const reducido = useReducedMotion()
   let antes = new Map<string, number>()
-  const filas = () => [...(raiz.value?.querySelectorAll<HTMLTableRowElement>('tbody tr') ?? [])]
+  // Las filas de la tabla que solo dicen "cargando" o "no hay nada" no son datos
+  const filas = () =>
+    [...(raiz.value?.querySelectorAll<HTMLElement>(selector) ?? [])].filter((f) => !f.querySelector('td[data-slot="loading"], td[data-slot="empty"]'))
 
   // Antes de que Vue actualice la tabla: dónde está cada fila
   watch(fuente, () => {

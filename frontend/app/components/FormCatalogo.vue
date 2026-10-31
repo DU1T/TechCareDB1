@@ -11,6 +11,7 @@ const emit = defineEmits<{ guardado: [] }>()
 
 const api = useApi()
 const toast = useToast()
+const { alcance, sacudir } = useSacudida() // sacude el formulario y lleva el foco al primer error
 const editando = computed(() => !!props.fila)
 
 const valores = reactive<Record<string, any>>({})
@@ -66,7 +67,10 @@ const errores = computed(() => {
 
 async function guardar() {
   intento.value = true
-  if (Object.keys(errores.value).length) return
+  if (Object.keys(errores.value).length) {
+    sacudir()
+    return
+  }
   guardando.value = true
   const body: Record<string, any> = {}
   for (const c of props.def.campos) {
@@ -81,6 +85,7 @@ async function guardar() {
     emit('guardado')
   } catch {
     /* useApi mostró el mensaje de la API (por ejemplo, un código repetido) */
+    sacudir(false)
   } finally {
     guardando.value = false
   }
@@ -90,7 +95,7 @@ async function guardar() {
 <template>
   <UModal v-model:open="abierto" :title="(editando ? 'Editar ' : 'Agregar ') + def.singular">
     <template #body>
-      <form class="space-y-4" novalidate @submit.prevent="guardar">
+      <form ref="alcance" class="space-y-4" novalidate @submit.prevent="guardar">
         <UFormField
           v-for="c in def.campos" :key="c.clave" :label="c.etiqueta" :required="c.obligatorio"
           :error="intento ? errores[c.clave] : undefined"

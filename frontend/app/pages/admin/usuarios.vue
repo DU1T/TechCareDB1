@@ -9,8 +9,10 @@ import type { Usuario } from '~/components/FormUsuario.vue'
 definePageMeta({ titulo: 'Usuarios', permiso: 'USUARIO_GESTIONAR' })
 
 const api = useApi()
+const auth = useAuthStore()
 const usuarios = ref<Usuario[]>([])
 const cargando = ref(true)
+const esqueleto = useEsqueleto(cargando)
 const fallo = ref(false)
 const texto = ref('')
 const modal = ref(false)
@@ -36,6 +38,10 @@ const visibles = computed(() => {
   return usuarios.value.filter((u) => [u.username, u.nombreCompleto, u.email, ...u.roles.map((r) => r.nombre)].some((v) => v?.toLowerCase().includes(t)))
 })
 
+// Al buscar, las filas se deslizan a su lugar y las que entran aparecen (composables/useReacomodo.ts)
+const tabla = ref<HTMLElement | null>(null)
+useReacomodo(tabla, () => visibles.value)
+
 function nuevo() { editando.value = null; modal.value = true }
 function editar(u: Usuario) { editando.value = u; modal.value = true }
 
@@ -50,20 +56,25 @@ const columnas: TableColumn<Usuario>[] = [
 
 <template>
   <div class="mx-auto max-w-6xl space-y-5">
-    <div class="flex flex-wrap items-end justify-between gap-3">
+    <div class="entra flex flex-wrap items-end justify-between gap-3" style="--i: 0">
       <UFormField label="Buscar" class="w-full sm:w-80">
         <UInput v-model="texto" icon="i-lucide-search" placeholder="Usuario, nombre o rol" class="w-full" />
       </UFormField>
       <UButton color="secondary" icon="i-lucide-plus" @click="nuevo">Nuevo usuario</UButton>
     </div>
 
-    <div class="overflow-hidden rounded-lg border border-bruma-200 bg-white">
+    <div ref="tabla" class="entra overflow-hidden rounded-lg border border-bruma-200 bg-white" style="--i: 1">
       <UTable
         :data="visibles" :columns="columnas" :loading="cargando" sticky class="max-h-[70dvh]"
         :empty="fallo ? 'No se pudo cargar la lista de usuarios. Intenta de nuevo.' : 'No hay usuarios con esa búsqueda.'"
       >
+        <template #loading><TablaEsqueleto :visible="esqueleto" :columnas="4" /></template>
         <template #username-cell="{ row }">
-          <span class="block font-medium text-highlighted">{{ row.original.username }}</span>
+          <span class="flex items-center gap-2 font-medium text-highlighted">
+            {{ row.original.username }}
+            <!-- Marca del propio usuario: explica por qué su estado queda deshabilitado al editarse -->
+            <UBadge v-if="row.original.idUsuario === auth.usuario?.idUsuario" color="primary" variant="subtle" size="sm">Tú</UBadge>
+          </span>
           <span class="block text-xs text-bruma-500">{{ row.original.nombreCompleto }}</span>
         </template>
         <template #roles-cell="{ row }">

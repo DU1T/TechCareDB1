@@ -60,7 +60,7 @@ const titulo = computed(() => String(route.meta.titulo ?? 'TechCare'))
 
       <nav class="flex-1 overflow-y-auto px-3 py-4">
         <div v-for="g in grupos" :key="g.nombre" class="mb-5">
-          <p class="mb-1.5 px-2 text-xs font-medium text-placa-300">{{ g.nombre }}</p>
+          <p class="relative z-10 mb-1.5 px-2 text-xs font-medium text-placa-300">{{ g.nombre }}</p>
           <ul class="space-y-0.5">
             <li v-for="item in g.items" :key="item.ruta">
               <NuxtLink
@@ -74,13 +74,13 @@ const titulo = computed(() => String(route.meta.titulo ?? 'TechCare'))
                 <Motion
                   v-if="rutaActiva === item.ruta"
                   layout-id="menu-activo"
-                  class="absolute inset-0 rounded-md bg-placa-800"
+                  class="absolute inset-0 z-0 rounded-md bg-placa-800"
                   :transition="RESORTE"
                 >
                   <span class="absolute inset-y-1.5 -left-3 w-1 rounded-r bg-acento-500" />
                 </Motion>
-                <UIcon :name="item.icono" class="relative size-5 shrink-0" />
-                <span class="relative">{{ item.etiqueta }}</span>
+                <UIcon :name="item.icono" class="relative z-10 size-5 shrink-0" />
+                <span class="relative z-10">{{ item.etiqueta }}</span>
               </NuxtLink>
               <span
                 v-else

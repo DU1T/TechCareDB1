@@ -14,7 +14,10 @@ const id = Number(route.params.id)
 const cliente = ref<Cliente | null>(null)
 const equipos = ref<Equipo[]>([])
 const cargando = ref(true)
+const esqueleto = useEsqueleto(cargando)
 const fallo = ref(false)
+const tablaEquipos = ref<HTMLElement | null>(null)
+useReacomodo(tablaEquipos, () => equipos.value) // al guardar un equipo, la tabla se acomoda en vez de saltar
 const modalCliente = ref(false)
 const modalEquipo = ref(false)
 const equipoEditando = ref<Equipo | null>(null)
@@ -59,8 +62,20 @@ const columnas: TableColumn<Equipo>[] = [
       <UButton color="neutral" variant="outline" icon="i-lucide-refresh-cw" class="ml-2" @click="cargar">Reintentar</UButton>
     </div>
 
+    <!-- Cargando: la misma forma de la ficha y de la tabla de equipos (solo si tarda más de un instante) -->
+    <div v-else-if="!cliente" class="space-y-5 transition-opacity duration-300" :class="esqueleto ? 'opacity-100' : 'opacity-0'" aria-busy="true">
+      <div class="rounded-lg border border-bruma-200 bg-white p-5">
+        <USkeleton class="h-6 w-56" />
+        <USkeleton class="mt-2 h-4 w-40" />
+        <div class="mt-5 grid gap-3 sm:grid-cols-3">
+          <USkeleton v-for="i in 3" :key="i" class="h-10" />
+        </div>
+      </div>
+      <div class="overflow-hidden rounded-lg border border-bruma-200 bg-white"><TablaEsqueleto :visible="esqueleto" :filas="3" :columnas="3" /></div>
+    </div>
+
     <template v-else-if="cliente">
-      <section class="rounded-lg border border-bruma-200 bg-white p-5">
+      <section class="entra rounded-lg border border-bruma-200 bg-white p-5" style="--i: 0">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 class="text-lg font-semibold text-highlighted">{{ cliente.nombre }}</h2>
@@ -78,12 +93,12 @@ const columnas: TableColumn<Equipo>[] = [
         </dl>
       </section>
 
-      <section class="space-y-3">
+      <section class="entra space-y-3" style="--i: 1">
         <div class="flex items-center justify-between">
           <h3 class="font-semibold text-highlighted">Equipos</h3>
           <UButton color="secondary" icon="i-lucide-plus" @click="nuevoEquipo">Nuevo equipo</UButton>
         </div>
-        <div class="overflow-hidden rounded-lg border border-bruma-200 bg-white">
+        <div ref="tablaEquipos" class="overflow-hidden rounded-lg border border-bruma-200 bg-white">
           <UTable :data="equipos" :columns="columnas" :loading="cargando" empty="Este cliente aún no tiene equipos registrados.">
             <template #equipo-cell="{ row }">
               <span class="block font-medium text-highlighted">{{ row.original.tipoEquipo }} · {{ row.original.marca }} {{ row.original.modelo }}</span>

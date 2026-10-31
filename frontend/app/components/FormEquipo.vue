@@ -23,6 +23,7 @@ const emit = defineEmits<{ guardado: [] }>()
 
 const api = useApi()
 const toast = useToast()
+const { alcance, sacudir } = useSacudida() // sacude el formulario y lleva el foco al primer error
 const editando = computed(() => !!props.equipo)
 
 const tipos = ref<Opcion[]>([])
@@ -83,7 +84,10 @@ const errores = computed(() => {
 
 async function guardar() {
   intento.value = true
-  if (Object.keys(errores.value).length) return
+  if (Object.keys(errores.value).length) {
+    sacudir()
+    return
+  }
   guardando.value = true
   try {
     await api(editando.value ? `/equipos/${props.equipo!.idEquipo}` : '/equipos', {
@@ -103,6 +107,7 @@ async function guardar() {
     emit('guardado')
   } catch {
     /* useApi mostró el mensaje (por ejemplo, un número de serie repetido) */
+    sacudir(false)
   } finally {
     guardando.value = false
   }
@@ -112,7 +117,7 @@ async function guardar() {
 <template>
   <UModal v-model:open="abierto" :title="editando ? 'Editar equipo' : 'Nuevo equipo'">
     <template #body>
-      <form class="space-y-4" novalidate @submit.prevent="guardar">
+      <form ref="alcance" class="space-y-4" novalidate @submit.prevent="guardar">
         <div class="grid gap-4 sm:grid-cols-2">
           <UFormField label="Tipo de equipo" required :error="intento ? errores.tipo : undefined">
             <USelect v-model="form.idTipoEquipo" :items="tipos" placeholder="Selecciona" class="w-full" />

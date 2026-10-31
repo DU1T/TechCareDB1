@@ -179,6 +179,23 @@ table,
   opacity: 0;
 }
 
+/* <Transition name="paso">: un bloque entero que llega al completar el paso anterior (sube 14px); se va solo con un fundido */
+.paso-enter-active {
+  transition:
+    opacity var(--dur-lenta) var(--ease-llega),
+    transform var(--dur-lenta) var(--ease-llega);
+}
+.paso-leave-active {
+  transition: opacity var(--dur-rapida) var(--ease-se-va);
+}
+.paso-enter-from {
+  opacity: 0;
+  transform: translateY(14px);
+}
+.paso-leave-to {
+  opacity: 0;
+}
+
 /* Código de barras decorativo de la etiqueta */
 .codigo-barras {
   background: repeating-linear-gradient(
