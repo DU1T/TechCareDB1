@@ -9,6 +9,7 @@ export type CampoCatalogo = {
   tipo: 'texto' | 'area' | 'dinero' | 'categoria'
   max?: number
   obligatorio?: boolean
+  formato?: 'nit' | 'telefono' // reglas de utils/validacion.ts, las mismas que valida la API
 }
 export type DefCatalogo = {
   clave: string
@@ -37,10 +38,10 @@ export const MANT_CATALOGOS: DefCatalogo[] = [
     clave: 'proveedores', titulo: 'Proveedores', singular: 'proveedor', ruta: '/proveedores', id: 'idProveedor',
     estados: { activo: 'ACTIVO', inactivo: 'INACTIVO' },
     campos: [
-      { clave: 'nit', etiqueta: 'NIT', tipo: 'texto', max: 15, obligatorio: true },
+      { clave: 'nit', etiqueta: 'NIT', tipo: 'texto', max: 15, obligatorio: true, formato: 'nit' },
       { clave: 'nombre', etiqueta: 'Nombre', tipo: 'texto', max: 150, obligatorio: true },
       { clave: 'contacto', etiqueta: 'Contacto', tipo: 'texto', max: 120 },
-      { clave: 'telefono', etiqueta: 'Teléfono', tipo: 'texto', max: 20 },
+      { clave: 'telefono', etiqueta: 'Teléfono', tipo: 'texto', max: 20, formato: 'telefono' },
       { clave: 'email', etiqueta: 'Correo', tipo: 'texto', max: 120 },
       { clave: 'direccion', etiqueta: 'Dirección', tipo: 'texto', max: 250 },
     ],

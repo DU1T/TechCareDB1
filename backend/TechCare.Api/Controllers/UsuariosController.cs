@@ -55,9 +55,8 @@ public sealed class UsuariosController : ControllerBase
         string? telefono,
         List<int>? roles)
     {
-        if (string.IsNullOrWhiteSpace(username) ||
-            username.Trim().Length > 50)
-            return "Ingrese un username valido (maximo 50 caracteres).";
+        if (!Validacion.UsuarioValido(username))
+            return "El usuario debe tener de 3 a 50 caracteres: letras, números, punto, guion o guion bajo, sin espacios.";
 
         if (string.IsNullOrWhiteSpace(nombre) ||
             nombre.Trim().Length > 120)
@@ -66,6 +65,9 @@ public sealed class UsuariosController : ControllerBase
         if ((email?.Length ?? 0) > 120 ||
             (telefono?.Length ?? 0) > 20)
             return "Revise la longitud del correo o telefono.";
+
+        if (!Validacion.TelefonoValido(telefono))
+            return "El teléfono debe tener al menos 8 dígitos y solo números, espacios, +, - o paréntesis.";
 
         if (roles is null ||
             roles.Count == 0 ||
@@ -86,12 +88,9 @@ public sealed class UsuariosController : ControllerBase
         if (error is not null)
             return BadRequest(new { error });
 
-        if (string.IsNullOrWhiteSpace(dto.Password) ||
-            dto.Password.Length < 8)
-            return BadRequest(new
-            {
-                error = "La contraseña debe tener al menos 8 caracteres."
-            });
+        var errorPassword = Validacion.ErrorPassword(dto.Password);
+        if (errorPassword is not null)
+            return BadRequest(new { error = errorPassword });
 
         dto.Username = dto.Username!.Trim();
         dto.NombreCompleto = dto.NombreCompleto!.Trim();
@@ -103,7 +102,7 @@ public sealed class UsuariosController : ControllerBase
         try
         {
             var id = await _repo.CrearAsync(
-                dto, _passwords.Hash(dto.Password));
+                dto, _passwords.Hash(dto.Password!)); // ErrorPassword ya garantizó que no es null
 
             return Ok(await _repo.DetalleAsync(id));
         }
@@ -163,11 +162,8 @@ public sealed class UsuariosController : ControllerBase
             });
 
         if (dto.Password is not null &&
-            dto.Password.Length < 8)
-            return BadRequest(new
-            {
-                error = "La nueva contraseña debe tener al menos 8 caracteres."
-            });
+            Validacion.ErrorPassword(dto.Password) is { } errorNueva)
+            return BadRequest(new { error = errorNueva });
 
         dto.Username = dto.Username!.Trim();
         dto.NombreCompleto = dto.NombreCompleto!.Trim();

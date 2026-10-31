@@ -93,7 +93,7 @@ async function ejecutar(ruta: string, body: Record<string, unknown> | undefined,
 const diag = reactive({ descripcion: '', costo: 0 as number | undefined })
 const errDiag = computed(() => ({
   descripcion: !diag.descripcion.trim() ? 'Describe el diagnóstico.' : diag.descripcion.length > 1000 ? 'Máximo 1000 caracteres.' : '',
-  costo: diag.costo == null || diag.costo < 0 ? 'El costo no puede ser negativo.' : '',
+  costo: diag.costo == null || diag.costo < 0 || diag.costo > LIMITE.montoMax ? MENSAJE.monto : '',
 }))
 function abrirDiagnostico() {
   Object.assign(diag, { descripcion: '', costo: 0 })
@@ -149,6 +149,7 @@ const errRep = computed(() => ({
   repuesto: !elegido.value ? 'Elige el repuesto y la bodega.' : '',
   cantidad:
     rep.cantidad == null || rep.cantidad < 1 ? 'La cantidad debe ser mayor que cero.'
+    : rep.cantidad > LIMITE.cantidadMax ? MENSAJE.cantidad
     : elegido.value && rep.cantidad > elegido.value.existencia ? `Solo hay ${elegido.value.existencia} en esa bodega.` : '',
 }))
 async function abrirRepuesto() {
@@ -176,7 +177,7 @@ function guardarRepuesto() {
 const fin = reactive({ descripcion: '', costo: 0 as number | undefined })
 const errFin = computed(() => ({
   descripcion: !fin.descripcion.trim() ? 'Describe el trabajo realizado.' : fin.descripcion.length > 1000 ? 'Máximo 1000 caracteres.' : '',
-  costo: fin.costo == null || fin.costo < 0 ? 'El costo no puede ser negativo.' : '',
+  costo: fin.costo == null || fin.costo < 0 || fin.costo > LIMITE.montoMax ? MENSAJE.monto : '',
 }))
 function abrirFinalizar() {
   Object.assign(fin, { descripcion: '', costo: Number(o.value?.costoManoObraEstimado ?? 0) })
@@ -212,11 +213,11 @@ const err = (msg: string) => (intento.value && msg ? msg : undefined)
     <template #body>
       <form class="space-y-4" novalidate @submit.prevent="guardarDiagnostico">
         <p class="text-sm text-bruma-600">La orden pasa a <strong>Esperando autorización</strong> del cliente.</p>
-        <UFormField label="Diagnóstico" required :error="err(errDiag.descripcion)">
-          <UTextarea v-model="diag.descripcion" :rows="4" class="w-full" />
+        <UFormField label="Diagnóstico" required :error="err(errDiag.descripcion)" :hint="contador(diag.descripcion, 1000)">
+          <UTextarea v-model="diag.descripcion" :rows="4" maxlength="1000" class="w-full" />
         </UFormField>
         <UFormField label="Mano de obra estimada (Q)" required :error="err(errDiag.costo)">
-          <UInputNumber v-model="diag.costo" :min="0" :step="0.01" :format-options="{ minimumFractionDigits: 2 }" class="w-full" />
+          <UInputNumber v-model="diag.costo" :min="0" :max="LIMITE.montoMax" :step="0.01" :format-options="{ minimumFractionDigits: 2 }" class="w-full" />
         </UFormField>
         <button type="submit" class="hidden" tabindex="-1" aria-hidden="true" />
       </form>
@@ -251,8 +252,8 @@ const err = (msg: string) => (intento.value && msg ? msg : undefined)
   <UModal v-model:open="abierto.actividad" title="Agregar actividad">
     <template #body>
       <form class="space-y-4" novalidate @submit.prevent="guardarActividad">
-        <UFormField label="Actividad realizada" required :error="err(errAct.descripcion)">
-          <UTextarea v-model="act.descripcion" :rows="3" class="w-full" />
+        <UFormField label="Actividad realizada" required :error="err(errAct.descripcion)" :hint="contador(act.descripcion, 300)">
+          <UTextarea v-model="act.descripcion" :rows="3" maxlength="300" class="w-full" />
         </UFormField>
         <UFormField label="Horas" required :error="err(errAct.horas)">
           <UInputNumber v-model="act.horas" :min="0.25" :max="24" :step="0.25" class="w-full" />
@@ -287,7 +288,7 @@ const err = (msg: string) => (intento.value && msg ? msg : undefined)
           Precio de venta: <strong class="text-highlighted">{{ quetzales(elegido.precioVenta) }}</strong> · disponible: {{ elegido.existencia }}
         </p>
         <UFormField label="Cantidad" required :error="err(errRep.cantidad)">
-          <UInputNumber v-model="rep.cantidad" :min="1" class="w-full" />
+          <UInputNumber v-model="rep.cantidad" :min="1" :max="LIMITE.cantidadMax" class="w-full" />
         </UFormField>
         <button type="submit" class="hidden" tabindex="-1" aria-hidden="true" />
       </form>
@@ -305,11 +306,11 @@ const err = (msg: string) => (intento.value && msg ? msg : undefined)
     <template #body>
       <form class="space-y-4" novalidate @submit.prevent="guardarFinalizar">
         <p class="text-sm text-bruma-600">La orden queda <strong>Lista para entregar</strong> y se puede facturar.</p>
-        <UFormField label="Trabajo realizado" required :error="err(errFin.descripcion)">
-          <UTextarea v-model="fin.descripcion" :rows="4" class="w-full" />
+        <UFormField label="Trabajo realizado" required :error="err(errFin.descripcion)" :hint="contador(fin.descripcion, 1000)">
+          <UTextarea v-model="fin.descripcion" :rows="4" maxlength="1000" class="w-full" />
         </UFormField>
         <UFormField label="Mano de obra (Q)" required :error="err(errFin.costo)">
-          <UInputNumber v-model="fin.costo" :min="0" :step="0.01" :format-options="{ minimumFractionDigits: 2 }" class="w-full" />
+          <UInputNumber v-model="fin.costo" :min="0" :max="LIMITE.montoMax" :step="0.01" :format-options="{ minimumFractionDigits: 2 }" class="w-full" />
         </UFormField>
         <button type="submit" class="hidden" tabindex="-1" aria-hidden="true" />
       </form>

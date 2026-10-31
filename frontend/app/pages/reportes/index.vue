@@ -153,7 +153,7 @@ onMounted(() => elegir(inicial.numero))
           :hint="f.ayuda"
           :class="f.tipo === 'fecha' ? 'w-full sm:w-40' : f.tipo === 'casilla' ? '' : 'w-full sm:w-56'"
         >
-          <UInput v-if="f.tipo === 'texto'" v-model="valores[f.nombre]" class="w-full" />
+          <UInput v-if="f.tipo === 'texto'" v-model="valores[f.nombre]" :maxlength="f.nombre === 'nit' ? 15 : 60" class="w-full" />
           <UInput v-else-if="f.tipo === 'numero'" v-model="valores[f.nombre]" type="number" min="1" class="w-full" />
           <UInput v-else-if="f.tipo === 'fecha'" v-model="valores[f.nombre]" type="date" class="w-full" />
           <UCheckbox v-else-if="f.tipo === 'casilla'" v-model="valores[f.nombre]" :label="f.etiqueta" class="py-1.5" />

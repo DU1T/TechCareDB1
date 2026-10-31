@@ -47,11 +47,13 @@ const errores = computed(() => {
   const nit = form.nit.trim()
   if (!nit) e.nit = 'Escribe el NIT (o CF).'
   else if (nit.length > 15) e.nit = 'Máximo 15 caracteres.'
+  else if (!nitValido(nit)) e.nit = MENSAJE.nit
   else if (form.tipoCliente === 'EMPRESA' && nit.toUpperCase() === 'CF') e.nit = 'Una empresa debe tener un NIT distinto de CF.'
   if (!form.nombre.trim()) e.nombre = 'Escribe el nombre.'
   else if (form.nombre.length > 150) e.nombre = 'Máximo 150 caracteres.'
   if (!form.telefono.trim() && !form.email.trim()) e.contacto = 'Indica un teléfono o un correo.'
   if (form.telefono.length > 20) e.telefono = 'Máximo 20 caracteres.'
+  else if (!telefonoValido(form.telefono)) e.telefono = MENSAJE.telefono
   if (form.email.length > 120) e.email = 'Máximo 120 caracteres.'
   if (form.email.trim() && !/^\S+@\S+\.\S+$/.test(form.email.trim())) e.email = 'El correo no parece válido.'
   if (form.direccion.length > 250) e.direccion = 'Máximo 250 caracteres.'

@@ -61,15 +61,17 @@ function alternarRol(id: number) {
 
 const errores = computed(() => {
   const e: Record<string, string> = {}
-  if (!form.username.trim()) e.username = 'Escribe el nombre de usuario.'
-  else if (form.username.trim().length > 50) e.username = 'Máximo 50 caracteres.'
+  const eu = errorUsuario(form.username)
+  if (eu) e.username = eu
   if (!form.nombreCompleto.trim()) e.nombre = 'Escribe el nombre completo.'
   else if (form.nombreCompleto.trim().length > 120) e.nombre = 'Máximo 120 caracteres.'
-  if (!editando.value && form.password.length < 8) e.password = 'Mínimo 8 caracteres.'
-  if (editando.value && form.password && form.password.length < 8) e.password = 'Mínimo 8 caracteres (o déjala vacía para no cambiarla).'
+  // En la edición, vacía = no cambia; si se escribe algo, cumple las mismas reglas
+  const ep = !editando.value || form.password ? errorPassword(form.password) : ''
+  if (ep) e.password = editando.value ? `${ep} (o déjala vacía para no cambiarla)` : ep
   if (form.email.length > 120) e.email = 'Máximo 120 caracteres.'
   if (form.email.trim() && !/^\S+@\S+\.\S+$/.test(form.email.trim())) e.email = 'El correo no parece válido.'
   if (form.telefono.length > 20) e.telefono = 'Máximo 20 caracteres.'
+  else if (!telefonoValido(form.telefono)) e.telefono = MENSAJE.telefono
   if (!form.idRoles.length) e.roles = 'Asigna al menos un rol.'
   return e
 })
@@ -111,14 +113,14 @@ async function guardar() {
     <template #body>
       <form ref="alcance" class="space-y-4" novalidate autocomplete="off" @submit.prevent="guardar">
         <div class="grid gap-4 sm:grid-cols-2">
-          <UFormField label="Usuario" required :error="intento ? errores.username : undefined">
-            <UInput v-model="form.username" maxlength="50" autocomplete="off" class="w-full" />
+          <UFormField label="Usuario" required :error="intento ? errores.username : undefined" hint="Sin espacios">
+            <UInput v-model="form.username" :maxlength="LIMITE.usuario" autocomplete="off" class="w-full" />
           </UFormField>
           <UFormField
             :label="editando ? 'Nueva contraseña' : 'Contraseña'" :required="!editando"
-            :error="intento ? errores.password : undefined" :hint="editando ? 'Vacía = no cambia' : (intento && errores.password ? undefined : 'Mínimo 8')"
+            :error="intento ? errores.password : undefined" :hint="editando ? 'Vacía = no cambia' : (intento && errores.password ? undefined : '8+, letra y número')"
           >
-            <UInput v-model="form.password" type="password" autocomplete="new-password" class="w-full" />
+            <UInput v-model="form.password" type="password" :maxlength="LIMITE.passwordMax" autocomplete="new-password" class="w-full" />
           </UFormField>
         </div>
         <UFormField label="Nombre completo" required :error="intento ? errores.nombre : undefined">

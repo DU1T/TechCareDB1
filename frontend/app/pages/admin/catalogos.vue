@@ -92,7 +92,7 @@ function editar(f: Record<string, any>) { editando.value = f; modal.value = true
 
     <div class="entra flex flex-wrap items-end justify-between gap-3" style="--i: 1">
       <UFormField label="Buscar" class="w-full sm:w-80">
-        <UInput v-model="texto" icon="i-lucide-search" :placeholder="`Buscar en ${def.titulo.toLowerCase()}`" class="w-full" />
+        <UInput v-model="texto" icon="i-lucide-search" :placeholder="`Buscar en ${def.titulo.toLowerCase()}`" :maxlength="LIMITE.busqueda" class="w-full" />
       </UFormField>
       <UButton color="secondary" icon="i-lucide-plus" @click="nuevo">Agregar {{ def.singular }}</UButton>
     </div>

@@ -65,11 +65,12 @@ public sealed class ComprasController : ControllerBase
         if (dto.Lineas.Any(l =>
                 l.IdRepuesto <= 0 ||
                 l.Cantidad <= 0 ||
-                l.CostoUnitario < 0))
+                l.Cantidad > Validacion.CantidadMaxima ||
+                !Validacion.MontoValido(l.CostoUnitario)))
         {
             return BadRequest(new
             {
-                error = "Cada línea necesita un repuesto, una cantidad mayor que cero y un costo no negativo."
+                error = "Cada línea necesita un repuesto, una cantidad de 1 a 10,000 y un costo de Q 0 a Q 1,000,000."
             });
         }
 

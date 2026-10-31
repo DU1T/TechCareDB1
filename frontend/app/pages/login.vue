@@ -9,8 +9,8 @@ const config = useRuntimeConfig()
 const modoSimulado = computed(() => config.public.modoSimulado === true)
 
 const schema = z.object({
-  username: z.string().trim().min(1, 'Escribe tu usuario'),
-  password: z.string().min(1, 'Escribe tu contraseña'),
+  username: z.string().trim().min(1, 'Escribe tu usuario').max(LIMITE.usuario, `Máximo ${LIMITE.usuario} caracteres`),
+  password: z.string().min(1, 'Escribe tu contraseña').max(LIMITE.passwordMax, `Máximo ${LIMITE.passwordMax} caracteres`),
 })
 
 const state = reactive({ username: '', password: '' })
@@ -96,13 +96,14 @@ async function entrar() {
           @submit="entrar"
         >
           <UFormField label="Usuario" name="username" class="entra" style="--i: 2">
-            <UInput v-model="state.username" size="lg" class="w-full" autocomplete="username" autofocus />
+            <UInput v-model="state.username" size="lg" :maxlength="LIMITE.usuario" class="w-full" autocomplete="username" autofocus />
           </UFormField>
 
           <UFormField label="Contraseña" name="password" class="entra" style="--i: 3">
             <UInput
               v-model="state.password"
               :type="verClave ? 'text' : 'password'"
+              :maxlength="LIMITE.passwordMax"
               size="lg"
               class="w-full"
               autocomplete="current-password"

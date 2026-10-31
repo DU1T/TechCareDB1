@@ -58,7 +58,7 @@ const columnas: TableColumn<Usuario>[] = [
   <div class="mx-auto max-w-6xl space-y-5">
     <div class="entra flex flex-wrap items-end justify-between gap-3" style="--i: 0">
       <UFormField label="Buscar" class="w-full sm:w-80">
-        <UInput v-model="texto" icon="i-lucide-search" placeholder="Usuario, nombre o rol" class="w-full" />
+        <UInput v-model="texto" icon="i-lucide-search" placeholder="Usuario, nombre o rol" :maxlength="LIMITE.busqueda" class="w-full" />
       </UFormField>
       <UButton color="secondary" icon="i-lucide-plus" @click="nuevo">Nuevo usuario</UButton>
     </div>

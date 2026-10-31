@@ -60,6 +60,8 @@ const errores = computed(() => {
       const t = String(v ?? '').trim()
       if (c.obligatorio && !t) e[c.clave] = 'Este dato es obligatorio.'
       else if (c.max && String(v ?? '').length > c.max) e[c.clave] = `Máximo ${c.max} caracteres.`
+      else if (c.formato === 'nit' && t && !nitValido(t)) e[c.clave] = MENSAJE.nit
+      else if (c.formato === 'telefono' && !telefonoValido(t)) e[c.clave] = MENSAJE.telefono
     }
   }
   return e

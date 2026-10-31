@@ -96,7 +96,7 @@ const columnas: TableColumn<Orden>[] = [
   <div class="mx-auto max-w-7xl space-y-5">
     <form class="flex flex-wrap items-end gap-3 rounded-lg border border-bruma-200 bg-white p-4" novalidate @submit.prevent="irATrazabilidad">
       <UFormField label="Trazabilidad de una orden" :error="errorNumero || undefined" class="w-full sm:w-80" hint="También las ya entregadas">
-        <UInput v-model="numeroBuscado" placeholder="OS-000012 o 12" class="w-full" />
+        <UInput v-model="numeroBuscado" placeholder="OS-000012 o 12" maxlength="12" class="w-full" />
       </UFormField>
       <UButton type="submit" color="secondary" icon="i-lucide-route">Ver trazabilidad</UButton>
     </form>
@@ -106,7 +106,7 @@ const columnas: TableColumn<Orden>[] = [
         <USelect v-model="filtro.estado" :items="estados" class="w-full" />
       </UFormField>
       <UFormField label="Buscar" class="w-full sm:w-72">
-        <UInput v-model="filtro.texto" icon="i-lucide-search" placeholder="Orden, cliente, equipo o técnico" class="w-full" />
+        <UInput v-model="filtro.texto" icon="i-lucide-search" placeholder="Orden, cliente, equipo o técnico" :maxlength="LIMITE.busqueda" class="w-full" />
       </UFormField>
     </div>
 

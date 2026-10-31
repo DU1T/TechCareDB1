@@ -56,8 +56,8 @@ async function anular() {
           Pago de <strong class="text-highlighted">{{ quetzales(pago.monto) }}</strong> ({{ pago.metodoPago }}). No se borra:
           queda registrado como anulado y el saldo de la factura vuelve a subir.
         </p>
-        <UFormField label="Motivo de la anulación" required :error="intento ? error : undefined">
-          <UTextarea v-model="motivo" :rows="3" class="w-full" />
+        <UFormField label="Motivo de la anulación" required :error="intento ? error : undefined" :hint="contador(motivo, 250)">
+          <UTextarea v-model="motivo" :rows="3" maxlength="250" class="w-full" />
         </UFormField>
         <button type="submit" class="hidden" tabindex="-1" aria-hidden="true" />
       </form>

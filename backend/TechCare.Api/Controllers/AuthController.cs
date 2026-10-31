@@ -47,6 +47,18 @@ public sealed class AuthController : ControllerBase
             });
         }
 
+        // Un usuario o una contraseña más largos que lo permitido no pueden existir:
+        // se rechazan sin consultar la base ni calcular el hash (que es lento a propósito).
+        // Mismo mensaje que una clave incorrecta, para no dar pistas.
+        if (dto.Username.Length > 50 ||
+            dto.Password.Length > Validacion.PasswordMaximo)
+        {
+            return Unauthorized(new
+            {
+                error = "Usuario o contraseña incorrectos."
+            });
+        }
+
         await using var cn = _db.Create();
 
         var usuario = await cn.QuerySingleOrDefaultAsync<UsuarioRow>(

@@ -39,7 +39,9 @@ public sealed class MantenimientosController : ControllerBase
            ?? Estado(d.Estado,"ACTIVO","INACTIVO");
     private static string? ValidarProveedor(GuardarProveedorDto d)
         => Texto(d.Nit,15,"NIT") ?? Texto(d.Nombre,150,"Nombre")
+           ?? (!Validacion.NitValido(d.Nit) ? "El NIT debe ser CF o números con su dígito verificador (por ejemplo 1234567-8)." : null)
            ?? Texto(d.Contacto,120,"Contacto",false) ?? Texto(d.Telefono,20,"Telefono",false)
+           ?? (!Validacion.TelefonoValido(d.Telefono) ? "El teléfono debe tener al menos 8 dígitos y solo números, espacios, +, - o paréntesis." : null)
            ?? Texto(d.Email,120,"Email",false) ?? Texto(d.Direccion,250,"Direccion",false)
            ?? Estado(d.Estado,"ACTIVO","INACTIVO");
     private static string? ValidarBodega(GuardarBodegaDto d)

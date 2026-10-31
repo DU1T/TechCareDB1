@@ -53,6 +53,14 @@ public sealed class AccionesFacturacionController : ControllerBase
             });
         }
 
+        if (nit is not null && !Validacion.NitValido(nit))
+        {
+            return BadRequest(new
+            {
+                error = "El NIT de facturación debe ser CF o números con su dígito verificador (por ejemplo 1234567-8)."
+            });
+        }
+
         var resultado = await _repo.FacturarOrdenAsync(
             id,
             User.IdUsuario(),
@@ -104,6 +112,14 @@ public sealed class AccionesFacturacionController : ControllerBase
             return BadRequest(new
             {
                 error = "Revise la orden, el nombre de quien recibe y los datos de entrega."
+            });
+        }
+
+        if (!Validacion.DpiValido(dto.DocumentoRecibe))
+        {
+            return BadRequest(new
+            {
+                error = "El DPI de quien recibe debe tener 13 dígitos."
             });
         }
 

@@ -134,7 +134,7 @@ async function guardar() {
             <UInput v-model="form.numeroSerie" maxlength="60" class="w-full" />
           </UFormField>
         </div>
-        <UFormField label="Descripción" :error="intento ? errores.descripcion : undefined" hint="Opcional">
+        <UFormField label="Descripción" :error="intento ? errores.descripcion : undefined" :hint="`Opcional · ${contador(form.descripcion, 300)}`">
           <UTextarea v-model="form.descripcion" :rows="2" maxlength="300" class="w-full" />
         </UFormField>
         <UFormField v-if="editando" label="Estado">

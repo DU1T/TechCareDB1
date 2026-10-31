@@ -29,11 +29,12 @@ public sealed class ReparacionRepuestosController : ControllerBase
         if (id <= 0 ||
             dto.IdBodega <= 0 ||
             dto.IdRepuesto <= 0 ||
-            dto.Cantidad <= 0)
+            dto.Cantidad <= 0 ||
+            dto.Cantidad > Validacion.CantidadMaxima)
         {
             return BadRequest(new
             {
-                error = "Indique la reparación, la bodega, el repuesto y una cantidad mayor que cero."
+                error = "Indique la reparación, la bodega, el repuesto y una cantidad de 1 a 10,000."
             });
         }
 

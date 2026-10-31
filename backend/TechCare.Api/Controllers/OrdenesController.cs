@@ -109,7 +109,7 @@ public sealed class OrdenesController : ControllerBase
         if (id <= 0 ||
             string.IsNullOrWhiteSpace(dto.Descripcion) ||
             dto.Descripcion.Length > 1000 ||
-            dto.CostoManoObraEstimado < 0)
+            !Validacion.MontoValido(dto.CostoManoObraEstimado))
         {
             return BadRequest(new
             {
