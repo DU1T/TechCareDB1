@@ -102,7 +102,7 @@ export const MENU: ItemMenu[] = [
     icono: 'i-lucide-user-cog',
     grupo: 'Administración',
     permiso: 'USUARIO_GESTIONAR',
-    listo: false,
+    listo: true,
   },
   {
     etiqueta: 'Catálogos',
