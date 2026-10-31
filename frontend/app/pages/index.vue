@@ -146,10 +146,13 @@ const frase = computed(() => {
       </div>
     </section>
 
-    <h3 class="entra mt-10 text-sm font-medium text-bruma-600" style="--i: 4">
+    <!-- Actividad reciente (§6.3): solo con REPORTE_VER, igual que el tablero -->
+    <TableroActividadReciente v-if="veTablero" class="entra mt-4" style="--i: 4" />
+
+    <h3 class="entra mt-10 text-sm font-medium text-bruma-600" style="--i: 5">
       {{ veTablero ? 'Módulos' : 'Estos son los módulos que tu rol puede usar.' }}
     </h3>
-    <ul class="entra mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" style="--i: 5">
+    <ul class="entra mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" style="--i: 6">
       <li v-for="a in accesos" :key="a.ruta">
         <NuxtLink
           v-if="a.listo"

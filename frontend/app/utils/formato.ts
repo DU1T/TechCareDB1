@@ -33,3 +33,16 @@ export const ESTADO_COMPRA: Record<string, { texto: string; color: 'warning' | '
   RECIBIDA: { texto: 'Recibida', color: 'success' },
   ANULADA: { texto: 'Anulada', color: 'neutral' },
 }
+
+// Día y hora cortos (sin año) para listas de actividad: "30 oct" y "2:00 p. m."
+const fechaDia = new Intl.DateTimeFormat('es-GT', { day: 'numeric', month: 'short' })
+const fechaHoraDelDia = new Intl.DateTimeFormat('es-GT', { hour: 'numeric', minute: '2-digit' })
+export const diaCorto = (iso: string | null | undefined) => (iso ? fechaDia.format(new Date(iso)) : '—')
+export const horaCorta = (iso: string | null | undefined) => (iso ? fechaHoraDelDia.format(new Date(iso)) : '')
+
+// AAAA-MM-DD del día de hoy (hora local) desplazado n días, para los filtros de fecha de la API
+export function diaISO(desplazamientoDias = 0) {
+  const d = new Date()
+  d.setDate(d.getDate() + desplazamientoDias)
+  return d.toLocaleDateString('sv-SE')
+}
