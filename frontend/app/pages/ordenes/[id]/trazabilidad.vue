@@ -25,6 +25,7 @@ const id = Number(route.params.id)
 
 const datos = ref<Trazabilidad | null>(null)
 const cargando = ref(true)
+const esqueleto = useEsqueleto(cargando)
 const noExiste = ref(false)
 
 async function cargar(silencioso = false) {
@@ -48,9 +49,20 @@ onMounted(() => cargar())
 const e = computed<Fila>(() => datos.value?.encabezado ?? {})
 const estado = computed(() => ESTADO_ORDEN[e.value.estado] ?? { texto: e.value.estado ?? '', color: 'neutral' as const })
 
-// Cada etapa se muestra aunque todavía no haya ocurrido: es parte de la trazabilidad
+// Cada etapa se muestra aunque todavía no haya ocurrido: es parte de la trazabilidad.
+// "No aplica" (en vez de "Pendiente") si la orden ya pasó por una etapa posterior o se canceló:
+// por ejemplo, el cliente rechazó la reparación y el equipo se entregó sin repararlo.
 type Dato = [etiqueta: string, valor: string]
-const etapas = computed<{ titulo: string; hecha: boolean; vacio: string; datos: Dato[] }[]>(() => {
+type Etapa = { titulo: string; hecha: boolean; omitida?: boolean; vacio: string; datos: Dato[] }
+const etapas = computed<Etapa[]>(() => {
+  const lista = etapasBase.value
+  const cancelada = e.value.estado === 'CANCELADO'
+  return lista.map((et, i) => ({
+    ...et,
+    omitida: !et.hecha && (cancelada || lista.slice(i + 1).some((s) => s.hecha)),
+  }))
+})
+const etapasBase = computed<Etapa[]>(() => {
   const x = e.value
   const equipo = [x.tipoEquipo, x.marca, x.modelo].filter(Boolean).join(' · ')
   return [
@@ -184,13 +196,7 @@ const colMovimientos: ColumnaReporte[] = [
   { clave: 'existenciaResultante', etiqueta: 'Después', formato: 'numero' },
   { clave: 'usuario', etiqueta: 'Usuario' },
 ]
-const colHistorial: ColumnaReporte[] = [
-  { clave: 'fechaCambio', etiqueta: 'Fecha', formato: 'fechaHora' },
-  { clave: 'estadoAnterior', etiqueta: 'De', formato: 'estado' },
-  { clave: 'estadoNuevo', etiqueta: 'A', formato: 'estado' },
-  { clave: 'usuario', etiqueta: 'Usuario' },
-  { clave: 'observacion', etiqueta: 'Observación' },
-]
+// El historial de estados se muestra como línea de tiempo (components/orden/LineaTiempo.vue)
 </script>
 
 <template>
@@ -202,7 +208,23 @@ const colHistorial: ColumnaReporte[] = [
       </UButton>
     </div>
 
-    <p v-if="cargando" class="text-bruma-600" aria-live="polite">Cargando la trazabilidad…</p>
+    <template v-if="cargando">
+      <div v-if="esqueleto" class="space-y-4" aria-busy="true">
+        <USkeleton class="h-8 w-56" />
+        <div class="rounded-xl border border-bruma-200 bg-white p-5"><USkeleton class="h-12 w-full" /></div>
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div v-for="i in 4" :key="i" class="rounded-lg border border-bruma-200 bg-white p-4">
+              <USkeleton class="h-5 w-28" />
+              <USkeleton class="mt-3 h-4 w-full" />
+              <USkeleton class="mt-2 h-4 w-4/5" />
+            </div>
+          </div>
+          <div class="rounded-xl border border-bruma-200 bg-white p-5"><USkeleton class="h-48 w-full" /></div>
+        </div>
+      </div>
+      <span class="sr-only" aria-live="polite">Cargando la trazabilidad…</span>
+    </template>
 
     <div v-else-if="noExiste || !datos?.encabezado" class="rounded-lg border border-bruma-200 bg-white p-6">
       <p class="font-medium">No se encontró la orden.</p>
@@ -215,6 +237,10 @@ const colHistorial: ColumnaReporte[] = [
         <UBadge :color="estado.color" variant="subtle" size="lg">{{ estado.texto }}</UBadge>
         <span class="text-sm text-bruma-600">Prioridad {{ String(e.prioridad ?? '').toLowerCase() }}</span>
       </header>
+
+      <div class="break-inside-avoid rounded-xl border border-bruma-200 bg-white px-3 py-5 sm:px-5">
+        <OrdenProgresoOrden :encabezado="e" :estado-texto="estado.texto" />
+      </div>
 
       <AccionesTaller :id-orden="id" :estado="e.estado" @hecho="cargar(true)" />
 
@@ -239,18 +265,23 @@ const colHistorial: ColumnaReporte[] = [
         </span>
       </section>
 
+      <!-- Detalle de cada etapa a la izquierda y el recorrido (historial) a la derecha; en celular, uno debajo del otro -->
+      <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div class="grid gap-4 md:grid-cols-2">
         <section
-          v-for="et in etapas"
+          v-for="(et, i) in etapas"
           :key="et.titulo"
-          class="break-inside-avoid rounded-lg border bg-white p-4"
+          class="entra break-inside-avoid rounded-lg border bg-white p-4"
           :class="et.hecha ? 'border-bruma-200' : 'border-dashed border-bruma-300'"
+          :style="{ '--i': i + 1 }"
         >
           <h3 class="flex items-center gap-2 font-semibold" :class="et.hecha ? '' : 'text-bruma-500'">
             {{ et.titulo }}
-            <UBadge v-if="!et.hecha" color="neutral" variant="outline" size="sm">Pendiente</UBadge>
+            <UBadge v-if="!et.hecha" color="neutral" variant="outline" size="sm">{{ et.omitida ? 'No aplica' : 'Pendiente' }}</UBadge>
           </h3>
-          <p v-if="!et.hecha" class="mt-2 text-sm text-bruma-500">{{ et.vacio }}</p>
+          <p v-if="!et.hecha" class="mt-2 text-sm text-bruma-500">
+            {{ et.omitida ? (e.estado === 'CANCELADO' ? 'La orden se canceló antes de esta etapa.' : 'La orden siguió sin pasar por esta etapa.') : et.vacio }}
+          </p>
           <dl v-else class="mt-2 space-y-1.5 text-sm">
             <div v-for="[k, v] in et.datos" :key="k" class="grid grid-cols-[9rem_minmax(0,1fr)] gap-2">
               <dt class="text-bruma-600">{{ k }}</dt>
@@ -258,6 +289,8 @@ const colHistorial: ColumnaReporte[] = [
             </div>
           </dl>
         </section>
+      </div>
+      <OrdenLineaTiempo :historial="datos.historial as any" :estado-actual="e.estado" class="break-inside-avoid lg:sticky lg:top-20" />
       </div>
 
       <ReporteTabla titulo="Repuestos usados" :columnas="colRepuestos" :filas="datos.repuestos" vacio="No se usaron repuestos en esta orden." />
@@ -284,7 +317,6 @@ const colHistorial: ColumnaReporte[] = [
         </div>
         <p class="text-sm text-bruma-600">{{ numero(datos.pagos.length) }} {{ datos.pagos.length === 1 ? 'fila' : 'filas' }}</p>
       </section>
-      <ReporteTabla titulo="Historial de estados" :columnas="colHistorial" :filas="datos.historial" vacio="Sin cambios de estado." />
 
       <FormFacturar v-if="puedeFacturar" v-model:open="modal.facturar" :orden="ordenAccion" @hecho="cargar(true)" />
       <FormPago v-if="puedeCobrar" v-model:open="modal.pagar" :factura="facturaPago" @pagado="cargar(true)" />

@@ -20,6 +20,7 @@ const emit = defineEmits<{ guardado: [c: { idCliente: number; nombre: string }] 
 
 const api = useApi()
 const toast = useToast()
+const { alcance, sacudir } = useSacudida() // sacude el formulario y lleva el foco al primer error
 const editando = computed(() => !!props.cliente)
 
 const form = reactive({ tipoCliente: 'INDIVIDUAL', nit: '', nombre: '', telefono: '', email: '', direccion: '', estado: 'ACTIVO' })
@@ -59,7 +60,10 @@ const errores = computed(() => {
 
 async function guardar() {
   intento.value = true
-  if (Object.keys(errores.value).length) return
+  if (Object.keys(errores.value).length) {
+    sacudir()
+    return
+  }
   guardando.value = true
   try {
     const r = await api<{ idCliente: number; nombre: string }>(editando.value ? `/clientes/${props.cliente!.idCliente}` : '/clientes', {
@@ -79,6 +83,7 @@ async function guardar() {
     emit('guardado', r)
   } catch {
     /* useApi mostró el mensaje (por ejemplo, un NIT que ya existe) */
+    sacudir(false)
   } finally {
     guardando.value = false
   }
@@ -88,7 +93,7 @@ async function guardar() {
 <template>
   <UModal v-model:open="abierto" :title="editando ? 'Editar cliente' : 'Nuevo cliente'">
     <template #body>
-      <form class="space-y-4" novalidate @submit.prevent="guardar">
+      <form ref="alcance" class="space-y-4" novalidate @submit.prevent="guardar">
         <div class="grid gap-4 sm:grid-cols-2">
           <UFormField label="Tipo de cliente" required>
             <USelect

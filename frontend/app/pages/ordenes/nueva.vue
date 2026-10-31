@@ -13,10 +13,14 @@ const api = useApi()
 const auth = useAuthStore()
 const toast = useToast()
 const route = useRoute()
+const { alcance, sacudir } = useSacudida() // si el formulario no pasa o la API rechaza: se sacude y el foco va al primer error
 
 const buscar = ref('')
 const resultados = ref<Cliente[]>([])
 const buscando = ref(false)
+const esqueletoBusqueda = useEsqueleto(buscando)
+const lista = ref<HTMLElement | null>(null)
+useReacomodo(lista, () => resultados.value, { selector: 'li' }) // los resultados se acomodan al buscar
 const cliente = ref<Cliente | null>(null)
 const equipos = ref<Equipo[]>([])
 const modalCliente = ref(false)
@@ -43,14 +47,18 @@ const equiposActivos = computed(() =>
   equipos.value.filter((e) => e.estado === 'ACTIVO').map((e) => ({ label: `${e.tipoEquipo} · ${e.marca} ${e.modelo} (${e.numeroSerie})`, value: e.idEquipo })),
 )
 
+// Si dos búsquedas se cruzan (escribes "a" y luego "ab"), solo vale la última que se pidió
+let pedido = 0
 async function buscarClientes() {
+  const mio = ++pedido
   buscando.value = true
   try {
-    resultados.value = (await api<Cliente[]>('/clientes', { query: { buscar: buscar.value.trim() || undefined } })).filter((c) => c.estado === 'ACTIVO')
+    const r = (await api<Cliente[]>('/clientes', { query: { buscar: buscar.value.trim() || undefined } })).filter((c) => c.estado === 'ACTIVO')
+    if (mio === pedido) resultados.value = r
   } catch {
-    resultados.value = []
+    if (mio === pedido) resultados.value = []
   } finally {
-    buscando.value = false
+    if (mio === pedido) buscando.value = false
   }
 }
 let espera: ReturnType<typeof setTimeout> | undefined
@@ -106,7 +114,10 @@ const errores = computed(() => {
 
 async function crear() {
   intento.value = true
-  if (Object.keys(errores.value).length) return
+  if (Object.keys(errores.value).length) {
+    sacudir()
+    return
+  }
   guardando.value = true
   try {
     const r = await api<{ idOrden: number; numeroOrden: string }>('/ordenes', {
@@ -123,6 +134,7 @@ async function crear() {
     await navigateTo(`/ordenes/${r.idOrden}/trazabilidad`)
   } catch {
     /* useApi mostró el mensaje de la API */
+    sacudir(false)
   } finally {
     guardando.value = false
   }
@@ -131,10 +143,25 @@ async function crear() {
 
 <template>
   <div class="mx-auto max-w-3xl space-y-5">
-    <section class="rounded-lg border border-bruma-200 bg-white p-5">
-      <h2 class="mb-3 font-semibold text-highlighted">1. Cliente</h2>
+    <section class="entra rounded-lg border border-bruma-200 bg-white p-5" style="--i: 0">
+      <h2 class="mb-3 flex items-center gap-2.5 font-semibold text-highlighted">
+        <!-- El círculo del paso pasa a ✓ (con un pequeño rebote) cuando ya hay cliente -->
+        <Motion
+          :key="cliente ? 'hecho' : 'pendiente'"
+          class="grid size-6 place-items-center rounded-full text-xs"
+          :class="cliente ? 'bg-placa-600 text-white' : 'border-2 border-placa-600 text-placa-700'"
+          :initial="{ scale: 0.6 }"
+          :animate="{ scale: 1 }"
+          :transition="RESORTE"
+        >
+          <UIcon v-if="cliente" name="i-lucide-check" class="size-3.5" />
+          <span v-else class="cifras" aria-hidden="true">1</span>
+        </Motion>
+        <span class="sr-only">Paso 1:</span>Cliente
+      </h2>
 
-      <div v-if="cliente" class="flex flex-wrap items-center justify-between gap-3">
+      <Transition name="aparece" mode="out-in">
+      <div v-if="cliente" key="elegido" class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p class="font-medium text-highlighted">{{ cliente.nombre }}</p>
           <p class="text-sm text-bruma-500">NIT {{ cliente.nit }} · {{ cliente.telefono ?? cliente.email ?? 'sin contacto' }}</p>
@@ -142,28 +169,38 @@ async function crear() {
         <UButton size="sm" color="neutral" variant="outline" @click="cambiarCliente">Cambiar cliente</UButton>
       </div>
 
-      <div v-else class="space-y-3">
+      <div v-else key="buscar" class="space-y-3">
         <div class="flex flex-wrap items-end gap-3">
           <UFormField label="Buscar cliente" class="w-full sm:w-80">
             <UInput v-model="buscar" icon="i-lucide-search" placeholder="Nombre o NIT" class="w-full" />
           </UFormField>
           <UButton v-if="auth.puede('CLIENTE_GESTIONAR')" color="neutral" variant="outline" icon="i-lucide-plus" @click="modalCliente = true">Cliente nuevo</UButton>
         </div>
-        <p v-if="buscando" class="text-sm text-bruma-500">Buscando…</p>
+        <!-- Buscando sin resultados todavía: en blanco un instante y cajas grises solo si tarda -->
+        <div v-if="buscando && !resultados.length" class="space-y-2 transition-opacity duration-300" :class="esqueletoBusqueda ? 'opacity-100' : 'opacity-0'" aria-hidden="true">
+          <USkeleton v-for="i in 3" :key="i" class="h-10" />
+        </div>
         <p v-else-if="!resultados.length" class="text-sm text-bruma-500">No hay clientes activos con esa búsqueda.</p>
-        <ul v-else class="divide-y divide-bruma-100 rounded-lg border border-bruma-200">
+        <!-- Mientras se busca de nuevo, los resultados anteriores quedan atenuados (no desaparecen y reaparecen) -->
+        <ul v-else ref="lista" class="divide-y divide-bruma-100 rounded-lg border border-bruma-200 transition-opacity duration-200" :class="buscando ? 'opacity-60' : ''">
           <li v-for="c in resultados" :key="c.idCliente">
-            <button type="button" class="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-bruma-50" @click="elegirCliente(c)">
+            <button type="button" class="flex w-full items-center justify-between px-3 py-2 text-left transition-colors hover:bg-bruma-50 motion-reduce:transition-none" @click="elegirCliente(c)">
               <span class="font-medium text-highlighted">{{ c.nombre }}</span>
               <span class="text-sm text-bruma-500">NIT {{ c.nit }}</span>
             </button>
           </li>
         </ul>
+        <span class="sr-only" role="status">{{ buscando ? 'Buscando…' : '' }}</span>
       </div>
+      </Transition>
     </section>
 
-    <form v-if="cliente" class="space-y-4 rounded-lg border border-bruma-200 bg-white p-5" novalidate @submit.prevent="crear">
-      <h2 class="font-semibold text-highlighted">2. Equipo y problema</h2>
+    <Transition name="paso">
+    <form v-if="cliente" ref="alcance" class="space-y-4 rounded-lg border border-bruma-200 bg-white p-5" novalidate @submit.prevent="crear">
+      <h2 class="flex items-center gap-2.5 font-semibold text-highlighted">
+        <span class="grid size-6 place-items-center rounded-full border-2 border-placa-600 text-xs text-placa-700" aria-hidden="true"><span class="cifras">2</span></span>
+        <span class="sr-only">Paso 2:</span>Equipo y problema
+      </h2>
 
       <div class="flex flex-wrap items-end gap-3">
         <UFormField label="Equipo" required :error="intento ? errores.equipo : undefined" class="w-full sm:flex-1">
@@ -194,6 +231,7 @@ async function crear() {
         <UButton type="submit" color="secondary" icon="i-lucide-clipboard-plus" :loading="guardando">Abrir orden</UButton>
       </div>
     </form>
+    </Transition>
 
     <FormCliente v-model:open="modalCliente" :cliente="null" @guardado="clienteNuevo" />
     <FormEquipo v-if="cliente" v-model:open="modalEquipo" :id-cliente="cliente.idCliente" :equipo="null" @guardado="elegirCliente(cliente!)" />

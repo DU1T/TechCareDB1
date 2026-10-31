@@ -13,25 +13,32 @@ const def = computed(() => MANT_CATALOGOS.find((c) => c.clave === activo.value)!
 
 const filas = ref<Record<string, any>[]>([])
 const cargando = ref(true)
+const esqueleto = useEsqueleto(cargando)
 const fallo = ref(false)
 const texto = ref('')
 const modal = ref(false)
 const editando = ref<Record<string, any> | null>(null)
 
+// Si se cambia de pestaña antes de que llegue la respuesta anterior, solo vale la última que se pidió
+let pedido = 0
 async function cargar() {
+  const mio = ++pedido
   cargando.value = true
   fallo.value = false
   try {
-    filas.value = await api<Record<string, any>[]>(def.value.ruta)
+    const r = await api<Record<string, any>[]>(def.value.ruta)
+    if (mio === pedido) filas.value = r
   } catch {
+    if (mio !== pedido) return
     filas.value = []
     fallo.value = true
   } finally {
-    cargando.value = false
+    if (mio === pedido) cargando.value = false
   }
 }
 onMounted(cargar)
-watch(activo, () => { texto.value = ''; cargar() })
+// Al cambiar de pestaña se vacían las filas: si no, las del catálogo anterior se verían un instante bajo las columnas del nuevo
+watch(activo, () => { texto.value = ''; filas.value = []; cargar() })
 
 const visibles = computed(() => {
   const t = texto.value.trim().toLowerCase()
@@ -59,32 +66,43 @@ function valorCelda(f: Record<string, any>, c: { clave: string; tipo: string }) 
   return f[c.clave] || '—'
 }
 
+// Al buscar o cambiar de pestaña, las filas se acomodan (composables/useReacomodo.ts)
+const tabla = ref<HTMLElement | null>(null)
+useReacomodo(tabla, () => visibles.value)
+
 function nuevo() { editando.value = null; modal.value = true }
 function editar(f: Record<string, any>) { editando.value = f; modal.value = true }
 </script>
 
 <template>
   <div class="mx-auto max-w-6xl space-y-5">
-    <div class="flex flex-wrap gap-2" role="tablist" aria-label="Catálogos">
-      <UButton
-        v-for="c in MANT_CATALOGOS" :key="c.clave" role="tab" :aria-selected="activo === c.clave" size="sm"
-        :color="activo === c.clave ? 'primary' : 'neutral'" :variant="activo === c.clave ? 'solid' : 'outline'"
+    <!-- La píldora verde claro es UNA sola pieza (layout-id) que se desliza de una pestaña a otra con resorte.
+         Es clara y el texto siempre oscuro, y las etiquetas van por encima (z-10): así se lee en todo el recorrido -->
+    <div class="entra flex flex-wrap gap-1.5" style="--i: 0" role="tablist" aria-label="Catálogos">
+      <button
+        v-for="c in MANT_CATALOGOS" :key="c.clave" type="button" role="tab" :aria-selected="activo === c.clave"
+        class="relative rounded-md border px-3 py-1.5 text-sm font-medium transition-colors motion-reduce:transition-none"
+        :class="activo === c.clave ? 'border-transparent text-placa-900' : 'border-bruma-300 bg-white text-bruma-700 hover:bg-bruma-50'"
         @click="activo = c.clave"
-      >{{ c.titulo }}</UButton>
+      >
+        <Motion v-if="activo === c.clave" layout-id="pestana-catalogo" class="absolute inset-0 z-0 rounded-md border border-placa-300 bg-placa-100" :transition="RESORTE" />
+        <span class="relative z-10">{{ c.titulo }}</span>
+      </button>
     </div>
 
-    <div class="flex flex-wrap items-end justify-between gap-3">
+    <div class="entra flex flex-wrap items-end justify-between gap-3" style="--i: 1">
       <UFormField label="Buscar" class="w-full sm:w-80">
         <UInput v-model="texto" icon="i-lucide-search" :placeholder="`Buscar en ${def.titulo.toLowerCase()}`" class="w-full" />
       </UFormField>
       <UButton color="secondary" icon="i-lucide-plus" @click="nuevo">Agregar {{ def.singular }}</UButton>
     </div>
 
-    <div class="overflow-hidden rounded-lg border border-bruma-200 bg-white">
+    <div ref="tabla" class="entra overflow-hidden rounded-lg border border-bruma-200 bg-white" style="--i: 2">
       <UTable
         :data="visibles" :columns="columnas" :loading="cargando" sticky class="max-h-[70dvh]"
         :empty="fallo ? 'No se pudo cargar la lista. Intenta de nuevo.' : 'No hay registros con esa búsqueda.'"
       >
+        <template #loading><TablaEsqueleto :visible="esqueleto" :columnas="Math.min(columnas.length - 1, 5)" /></template>
         <template v-for="c in def.campos.filter((x) => x.tipo !== 'area')" :key="c.clave" #[`${c.clave}-cell`]="{ row }">
           {{ valorCelda(row.original, c) }}
         </template>

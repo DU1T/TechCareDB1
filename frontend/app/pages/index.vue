@@ -1,19 +1,13 @@
 <script setup lang="ts">
+import type { ResumenTaller } from '~/components/tablero/LineaTaller.vue'
+
 // Inicio es para cualquier usuario con sesión: es el destino al que el middleware manda
 // a quien no tiene permiso, así que NO debe pedir uno (si no, se forma un bucle).
+// El tablero (GET /dashboard) solo se pide y se muestra si el rol tiene REPORTE_VER.
 definePageMeta({ titulo: 'Inicio' })
 
-/*
-  Resumen del taller (GET /dashboard, que sale de vw_DashboardResumen). Los números los calcula la vista;
-  aquí solo se muestran y cada uno lleva a la pantalla donde se atiende.
-*/
-type Resumen = {
+type Resumen = ResumenTaller & {
   ordenesAbiertas: number
-  recibidas: number
-  enDiagnostico: number
-  esperandoAutorizacion: number
-  enReparacion: number
-  listasParaEntregar: number
   facturasConSaldo: number
   saldoPorCobrar: number
   repuestosBajoMinimo: number
@@ -23,115 +17,156 @@ const auth = useAuthStore()
 const api = useApi()
 
 const primerNombre = computed(() => auth.usuario?.nombreCompleto.split(' ')[0] ?? '')
+const hoy = new Intl.DateTimeFormat('es-GT', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())
 const accesos = computed(() =>
   MENU.filter((i) => i.ruta !== '/' && (!i.permiso || auth.puede(i.permiso))),
 )
 
-const verResumen = computed(() => auth.puede('REPORTE_VER'))
+const veTablero = computed(() => auth.puede('REPORTE_VER'))
+// "Por cobrar" es enlace a Caja solo para quien puede cobrar; para los demás es una tarjeta sin enlace
+const puedeCobrar = computed(() => auth.puede('PAGO_REGISTRAR'))
+const NuxtLink = resolveComponent('NuxtLink')
 const resumen = ref<Resumen | null>(null)
-const cargandoResumen = ref(false)
-const falloResumen = ref(false)
+const cargando = ref(veTablero.value) // desde el primer instante: así no hay un cuadro vacío antes de pedir los datos
+const esqueleto = useEsqueleto(cargando)
+const fallo = ref(false)
 
-async function cargarResumen() {
-  if (!verResumen.value) return
-  cargandoResumen.value = true
-  falloResumen.value = false
+async function cargar() {
+  if (!veTablero.value) return
+  cargando.value = true
+  fallo.value = false
   try {
     resumen.value = await api<Resumen>('/dashboard')
   } catch {
-    falloResumen.value = true
+    fallo.value = true
   } finally {
-    cargandoResumen.value = false
+    cargando.value = false
   }
 }
-onMounted(cargarResumen)
+onMounted(cargar)
 
-// Cada etapa de la reparación lleva a la lista de órdenes ya filtrada por ese estado
-const etapas = computed(() => {
+// La frase de arriba dice lo más urgente con los mismos números del tablero
+const frase = computed(() => {
   const r = resumen.value
-  if (!r) return []
-  return [
-    { estado: 'RECIBIDO', cantidad: r.recibidas },
-    { estado: 'DIAGNOSTICO', cantidad: r.enDiagnostico },
-    { estado: 'ESPERANDO_AUTORIZACION', cantidad: r.esperandoAutorizacion },
-    { estado: 'REPARACION', cantidad: r.enReparacion },
-    { estado: 'LISTO', cantidad: r.listasParaEntregar },
-  ]
+  if (!r) return ''
+  const partes = []
+  if (r.listasParaEntregar) partes.push(`${numero(r.listasParaEntregar)} ${r.listasParaEntregar === 1 ? 'equipo listo espera' : 'equipos listos esperan'} a su dueño`)
+  if (r.esperandoAutorizacion) partes.push(`${numero(r.esperandoAutorizacion)} ${r.esperandoAutorizacion === 1 ? 'espera' : 'esperan'} la respuesta del cliente`)
+  return partes.join(' · ')
 })
-const puedeCaja = computed(() => auth.puede('PAGO_REGISTRAR'))
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl">
-    <h2 class="text-2xl font-semibold tracking-tight">Hola, {{ primerNombre }}</h2>
-    <p class="mt-1 text-bruma-600">Así va el taller hoy y los módulos que tu rol puede usar.</p>
+  <div class="mx-auto max-w-6xl">
+    <div class="entra" style="--i: 0">
+      <p class="text-sm text-bruma-600 first-letter:uppercase">{{ hoy }}</p>
+      <h2 class="text-2xl font-semibold tracking-tight">Hola, {{ primerNombre }}</h2>
+    </div>
 
-    <section v-if="verResumen" class="mt-6 space-y-3" aria-label="Resumen del taller">
-      <p v-if="cargandoResumen && !resumen" class="text-sm text-bruma-600" aria-live="polite">Cargando el resumen…</p>
-
-      <div v-else-if="falloResumen" class="flex flex-wrap items-center gap-3 rounded-lg border border-bruma-200 bg-white p-4">
-        <p class="text-sm text-bruma-600">No se pudo cargar el resumen del taller.</p>
-        <UButton size="xs" color="neutral" variant="outline" icon="i-lucide-refresh-cw" @click="cargarResumen">Reintentar</UButton>
+    <!-- Tablero: solo con REPORTE_VER -->
+    <section v-if="veTablero" class="mt-6" aria-labelledby="titulo-taller">
+      <!-- Cargando: cajas grises con la misma forma del tablero (no salta nada al llegar los datos) -->
+      <div v-if="esqueleto && !resumen" class="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" aria-busy="true">
+        <div class="rounded-xl border border-bruma-200 bg-white p-6">
+          <USkeleton class="h-4 w-32" />
+          <USkeleton class="mt-3 h-14 w-24" />
+          <USkeleton class="mt-6 h-11 w-full" />
+          <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <USkeleton v-for="i in 5" :key="i" class="h-12" />
+          </div>
+        </div>
+        <div class="grid gap-4">
+          <div v-for="i in 2" :key="i" class="rounded-xl border border-bruma-200 bg-white p-6">
+            <USkeleton class="h-4 w-24" />
+            <USkeleton class="mt-3 h-8 w-36" />
+            <USkeleton class="mt-3 h-4 w-40" />
+          </div>
+        </div>
+        <span class="sr-only">Cargando el resumen del taller…</span>
       </div>
 
-      <template v-else-if="resumen">
-        <div class="rounded-lg border border-bruma-200 bg-white p-4">
-          <div class="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 class="font-semibold">Órdenes abiertas</h3>
-            <NuxtLink to="/ordenes" class="text-sm text-placa-700 underline-offset-2 hover:underline">Ver todas</NuxtLink>
-          </div>
-          <p class="cifras mt-1 text-4xl font-semibold tracking-tight">{{ numero(resumen.ordenesAbiertas) }}</p>
-          <ul class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-            <li v-for="e in etapas" :key="e.estado">
-              <NuxtLink
-                :to="{ path: '/ordenes', query: { estado: e.estado } }"
-                class="block rounded-md border border-bruma-200 px-3 py-2 transition-colors hover:border-placa-300 hover:bg-placa-50 motion-reduce:transition-none"
-              >
-                <span class="cifras block text-xl font-semibold">{{ numero(e.cantidad) }}</span>
-                <span class="block text-xs text-bruma-600">{{ ESTADO_ORDEN[e.estado]?.texto }}</span>
-              </NuxtLink>
-            </li>
-          </ul>
+      <UAlert
+        v-else-if="fallo"
+        color="error"
+        variant="subtle"
+        icon="i-lucide-circle-alert"
+        title="No se pudo cargar el resumen del taller"
+        :actions="[{ label: 'Reintentar', color: 'neutral', variant: 'outline', icon: 'i-lucide-refresh-cw', onClick: cargar }]"
+      />
+
+      <div v-else-if="resumen" class="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div class="entra rounded-xl border border-bruma-200 bg-white p-6" style="--i: 1">
+          <h3 id="titulo-taller" class="text-sm font-medium text-bruma-600">El taller ahora</h3>
+          <p class="mt-1 flex items-baseline gap-3">
+            <span class="text-6xl font-semibold tracking-tight text-bruma-950">
+              <ContadorAnimado :valor="resumen.ordenesAbiertas" :retraso="200" />
+            </span>
+            <span class="text-lg text-bruma-700">órdenes abiertas</span>
+          </p>
+          <p v-if="frase" class="mt-1 text-sm text-bruma-600">{{ frase }}</p>
+
+          <TableroLineaTaller :datos="resumen" class="mt-6" />
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2">
+        <div class="grid gap-4">
           <component
-            :is="puedeCaja ? 'NuxtLink' : 'div'"
-            :to="puedeCaja ? '/caja' : undefined"
-            class="rounded-lg border border-bruma-200 bg-white p-4"
-            :class="puedeCaja ? 'transition-colors hover:border-placa-300 motion-reduce:transition-none' : ''"
+            :is="puedeCobrar ? NuxtLink : 'div'"
+            v-bind="puedeCobrar ? { to: '/caja' } : {}"
+            class="entra group block rounded-xl border border-bruma-200 bg-white p-6 transition-colors"
+            :class="puedeCobrar ? 'hover:border-placa-300' : ''"
+            style="--i: 2"
           >
-            <h3 class="font-semibold">Por cobrar</h3>
-            <p class="cifras mt-1 text-3xl font-semibold tracking-tight">{{ quetzales(resumen.saldoPorCobrar) }}</p>
-            <p class="mt-1 text-sm text-bruma-600">
+            <span class="flex items-center justify-between text-sm font-medium text-bruma-600">
+              Por cobrar
+              <UIcon v-if="puedeCobrar" name="i-lucide-arrow-right" class="size-4 -translate-x-1 opacity-0 transition duration-200 group-hover:translate-x-0 group-hover:opacity-100" />
+            </span>
+            <span class="mt-1 block text-3xl font-semibold tracking-tight">
+              <ContadorAnimado :valor="resumen.saldoPorCobrar" :formato="quetzales" :retraso="350" />
+            </span>
+            <span class="mt-1 block text-sm text-bruma-600">
               en {{ numero(resumen.facturasConSaldo) }} {{ resumen.facturasConSaldo === 1 ? 'factura' : 'facturas' }} con saldo
-            </p>
+            </span>
           </component>
+
           <NuxtLink
             to="/inventario"
-            class="rounded-lg border border-bruma-200 bg-white p-4 transition-colors hover:border-placa-300 motion-reduce:transition-none"
+            class="entra group block rounded-xl border border-bruma-200 bg-white p-6 transition-colors hover:border-placa-300"
+            style="--i: 3"
           >
-            <h3 class="font-semibold">Repuestos por reponer</h3>
-            <p class="cifras mt-1 text-3xl font-semibold tracking-tight">{{ numero(resumen.repuestosBajoMinimo) }}</p>
-            <p class="mt-1 text-sm text-bruma-600">bajo el mínimo o sin stock</p>
+            <span class="flex items-center justify-between text-sm font-medium text-bruma-600">
+              Repuestos por reponer
+              <UIcon name="i-lucide-arrow-right" class="size-4 -translate-x-1 opacity-0 transition duration-200 group-hover:translate-x-0 group-hover:opacity-100" />
+            </span>
+            <span class="mt-1 block text-3xl font-semibold tracking-tight" :class="resumen.repuestosBajoMinimo ? 'text-acento-800' : ''">
+              <ContadorAnimado :valor="resumen.repuestosBajoMinimo" :retraso="450" />
+            </span>
+            <span class="mt-1 block text-sm text-bruma-600">bajo el mínimo o sin existencia</span>
           </NuxtLink>
         </div>
-      </template>
+      </div>
     </section>
 
-    <h3 class="mt-8 text-sm font-medium text-bruma-600">Módulos</h3>
-    <ul class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <!-- Actividad reciente (§6.3): solo con REPORTE_VER, igual que el tablero -->
+    <TableroActividadReciente v-if="veTablero" class="entra mt-4" style="--i: 4" />
+
+    <h3 class="entra mt-10 text-sm font-medium text-bruma-600" style="--i: 5">
+      {{ veTablero ? 'Módulos' : 'Estos son los módulos que tu rol puede usar.' }}
+    </h3>
+    <ul class="entra mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" style="--i: 6">
       <li v-for="a in accesos" :key="a.ruta">
         <NuxtLink
           v-if="a.listo"
           :to="a.ruta"
-          class="flex h-full gap-3 rounded-lg border border-bruma-200 bg-white p-4 transition-colors hover:border-placa-300 motion-reduce:transition-none"
+          class="group flex h-full gap-3 rounded-lg border border-bruma-200 bg-white p-4 transition-colors hover:border-placa-300 motion-reduce:transition-none"
         >
           <span class="grid size-9 shrink-0 place-items-center rounded-md bg-placa-50 text-placa-600">
             <UIcon :name="a.icono" class="size-5" />
           </span>
-          <span>
-            <span class="block font-medium">{{ a.etiqueta }}</span>
+          <span class="min-w-0 flex-1">
+            <span class="flex items-center justify-between font-medium">
+              {{ a.etiqueta }}
+              <UIcon name="i-lucide-arrow-right" class="size-4 -translate-x-1 text-placa-600 opacity-0 transition duration-200 group-hover:translate-x-0 group-hover:opacity-100" />
+            </span>
             <span class="mt-0.5 block text-sm text-bruma-600">{{ a.descripcion }}</span>
           </span>
         </NuxtLink>

@@ -21,6 +21,7 @@ const emit = defineEmits<{ guardado: [] }>()
 const api = useApi()
 const auth = useAuthStore()
 const toast = useToast()
+const { alcance, sacudir } = useSacudida() // sacude el formulario y lleva el foco al primer error
 const editando = computed(() => !!props.usuario)
 const esYo = computed(() => props.usuario?.idUsuario === auth.usuario?.idUsuario)
 
@@ -75,7 +76,10 @@ const errores = computed(() => {
 
 async function guardar() {
   intento.value = true
-  if (Object.keys(errores.value).length) return
+  if (Object.keys(errores.value).length) {
+    sacudir()
+    return
+  }
   guardando.value = true
   try {
     await api(editando.value ? `/usuarios/${props.usuario!.idUsuario}` : '/usuarios', {
@@ -95,6 +99,7 @@ async function guardar() {
     emit('guardado')
   } catch {
     /* useApi mostró el mensaje de la API */
+    sacudir(false)
   } finally {
     guardando.value = false
   }
@@ -104,7 +109,7 @@ async function guardar() {
 <template>
   <UModal v-model:open="abierto" :title="editando ? 'Editar usuario' : 'Nuevo usuario'">
     <template #body>
-      <form class="space-y-4" novalidate autocomplete="off" @submit.prevent="guardar">
+      <form ref="alcance" class="space-y-4" novalidate autocomplete="off" @submit.prevent="guardar">
         <div class="grid gap-4 sm:grid-cols-2">
           <UFormField label="Usuario" required :error="intento ? errores.username : undefined">
             <UInput v-model="form.username" maxlength="50" autocomplete="off" class="w-full" />
