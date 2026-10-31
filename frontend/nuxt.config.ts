@@ -46,6 +46,8 @@ export default defineNuxtConfig({
         'lucide:banknote',
         'lucide:undo-2',
         'lucide:refresh-cw',
+        'lucide:pencil', 
+        'lucide:laptop',
       ],
     },
   },
