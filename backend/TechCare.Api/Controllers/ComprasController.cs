@@ -54,6 +54,9 @@ public sealed class ComprasController : ControllerBase
             });
         }
 
+        if (!Validacion.CodigoValido(dto.NumeroDocumento))
+            return BadRequest(new { error = "El número de documento " + Validacion.MensajeCodigo });
+
         if (dto.Lineas is null || dto.Lineas.Count == 0)
         {
             return BadRequest(new

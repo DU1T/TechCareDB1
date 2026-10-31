@@ -25,9 +25,11 @@ const errores = computed(() => {
   const e: Record<string, string> = {}
   if (!form.idMetodoPago) e.metodo = 'Elige el método de pago.'
   if (!form.monto || !(montoNum.value > 0)) e.monto = 'Escribe un monto mayor que cero.'
+  else if (!dosDecimales(montoNum.value)) e.monto = MENSAJE.decimales
   else if (props.factura && aCentavos(montoNum.value) > aCentavos(props.factura.saldo))
     e.monto = `No puede superar el saldo (${quetzales(props.factura.saldo)}).`
   if (metodo.value?.requiereReferencia && !form.referencia.trim()) e.referencia = 'Este método requiere número de referencia.'
+  else if (!referenciaValida(form.referencia)) e.referencia = MENSAJE.referencia
   return e
 })
 
@@ -94,7 +96,7 @@ async function guardar() {
           />
         </UFormField>
 
-        <UFormField label="Monto (Q)" required :error="intento ? errores.monto : undefined">
+        <UFormField label="Monto (Q)" required :error="mostrar(intento, errores.monto, form.monto, /\.\d{3,}/)">
           <UInput v-model="form.monto" type="number" inputmode="decimal" step="0.01" min="0" class="w-full" />
         </UFormField>
 
@@ -103,7 +105,7 @@ async function guardar() {
           label="Número de referencia"
           required
           hint="Boleta, autorización o número de cheque"
-          :error="intento ? errores.referencia : undefined"
+          :error="mostrar(intento, errores.referencia, form.referencia, INVALIDO.referencia)"
         >
           <UInput v-model="form.referencia" maxlength="60" class="w-full" />
         </UFormField>

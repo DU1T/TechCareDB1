@@ -53,6 +53,14 @@ public sealed class AccionesFacturacionController : ControllerBase
             });
         }
 
+        if (nombre is not null && !Validacion.NombreValido(nombre))
+        {
+            return BadRequest(new
+            {
+                error = "El nombre de facturación " + Validacion.MensajeNombre
+            });
+        }
+
         if (nit is not null && !Validacion.NitValido(nit))
         {
             return BadRequest(new
@@ -112,6 +120,14 @@ public sealed class AccionesFacturacionController : ControllerBase
             return BadRequest(new
             {
                 error = "Revise la orden, el nombre de quien recibe y los datos de entrega."
+            });
+        }
+
+        if (!Validacion.NombreValido(dto.NombreRecibe))
+        {
+            return BadRequest(new
+            {
+                error = "El nombre de quien recibe " + Validacion.MensajeNombre
             });
         }
 

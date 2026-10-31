@@ -24,7 +24,7 @@ watch(abierto, (v) => {
 
 const errores = computed(() => ({
   nit: form.nit.length > 15 ? 'Máximo 15 caracteres.' : form.nit.trim() && !nitValido(form.nit) ? MENSAJE.nit : '',
-  nombre: form.nombre.length > 150 ? 'Máximo 150 caracteres.' : '',
+  nombre: errorNombre(form.nombre, 150, false),
   direccion: form.direccion.length > 250 ? 'Máximo 250 caracteres.' : '',
 }))
 const hayError = computed(() => Object.values(errores.value).some(Boolean))
@@ -65,13 +65,13 @@ async function emitir() {
           Se facturará <strong class="text-highlighted">{{ orden.numeroOrden }}</strong> con la mano de obra y los repuestos
           registrados. Cada orden tiene una sola factura.
         </p>
-        <UFormField label="NIT de facturación" :error="(intento || form.nit.length > 15) && errores.nit ? errores.nit : undefined" hint="Opcional">
+        <UFormField label="NIT de facturación" :error="mostrar(intento, errores.nit, form.nit, INVALIDO.nit)" hint="Opcional · CF o 1234567-8">
           <UInput v-model="form.nit" :placeholder="orden.nitCliente" maxlength="15" class="w-full" />
         </UFormField>
-        <UFormField label="Nombre de facturación" :error="errores.nombre || undefined" hint="Opcional">
+        <UFormField label="Nombre de facturación" :error="mostrar(intento, errores.nombre, form.nombre, INVALIDO.nombre)" :hint="limite(form.nombre, 150, 'Opcional')">
           <UInput v-model="form.nombre" :placeholder="orden.cliente" maxlength="150" class="w-full" />
         </UFormField>
-        <UFormField label="Dirección" :error="errores.direccion || undefined" hint="Opcional">
+        <UFormField label="Dirección" :error="mostrar(intento, errores.direccion)" :hint="limite(form.direccion, 250, 'Opcional')">
           <UInput v-model="form.direccion" placeholder="La del cliente" maxlength="250" class="w-full" />
         </UFormField>
         <button type="submit" class="hidden" tabindex="-1" aria-hidden="true" />

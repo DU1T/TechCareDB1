@@ -49,13 +49,13 @@ const errores = computed(() => {
   else if (nit.length > 15) e.nit = 'Máximo 15 caracteres.'
   else if (!nitValido(nit)) e.nit = MENSAJE.nit
   else if (form.tipoCliente === 'EMPRESA' && nit.toUpperCase() === 'CF') e.nit = 'Una empresa debe tener un NIT distinto de CF.'
-  if (!form.nombre.trim()) e.nombre = 'Escribe el nombre.'
-  else if (form.nombre.length > 150) e.nombre = 'Máximo 150 caracteres.'
+  const en = errorNombre(form.nombre, 150)
+  if (en) e.nombre = en
   if (!form.telefono.trim() && !form.email.trim()) e.contacto = 'Indica un teléfono o un correo.'
   if (form.telefono.length > 20) e.telefono = 'Máximo 20 caracteres.'
   else if (!telefonoValido(form.telefono)) e.telefono = MENSAJE.telefono
   if (form.email.length > 120) e.email = 'Máximo 120 caracteres.'
-  if (form.email.trim() && !/^\S+@\S+\.\S+$/.test(form.email.trim())) e.email = 'El correo no parece válido.'
+  if (!emailValido(form.email)) e.email = MENSAJE.email
   if (form.direccion.length > 250) e.direccion = 'Máximo 250 caracteres.'
   return e
 })
@@ -104,22 +104,22 @@ async function guardar() {
               class="w-full"
             />
           </UFormField>
-          <UFormField label="NIT" required :error="intento ? errores.nit : undefined" hint="CF si no tiene">
+          <UFormField label="NIT" required :error="mostrar(intento, errores.nit, form.nit, INVALIDO.nit)" hint="CF o 1234567-8">
             <UInput v-model="form.nit" maxlength="15" class="w-full" />
           </UFormField>
         </div>
-        <UFormField label="Nombre" required :error="intento ? errores.nombre : undefined">
+        <UFormField label="Nombre" required :error="mostrar(intento, errores.nombre, form.nombre, INVALIDO.nombre)" :hint="limite(form.nombre, 150)">
           <UInput v-model="form.nombre" maxlength="150" class="w-full" />
         </UFormField>
         <div class="grid gap-4 sm:grid-cols-2">
-          <UFormField label="Teléfono" :error="intento ? (errores.telefono ?? errores.contacto) : undefined">
+          <UFormField label="Teléfono" :error="mostrar(intento, errores.telefono, form.telefono, INVALIDO.telefono) ?? (intento ? errores.contacto : undefined)" hint="ej. 5555-0101">
             <UInput v-model="form.telefono" maxlength="20" inputmode="tel" class="w-full" />
           </UFormField>
-          <UFormField label="Correo" :error="intento ? errores.email : undefined" hint="Teléfono o correo">
+          <UFormField label="Correo" :error="mostrar(intento, errores.email, form.email, /\s/)" :hint="limite(form.email, 120, 'Teléfono o correo')">
             <UInput v-model="form.email" type="email" maxlength="120" class="w-full" />
           </UFormField>
         </div>
-        <UFormField label="Dirección" :error="intento ? errores.direccion : undefined">
+        <UFormField label="Dirección" :error="mostrar(intento, errores.direccion)" :hint="limite(form.direccion, 250)">
           <UInput v-model="form.direccion" maxlength="250" class="w-full" />
         </UFormField>
         <UFormField v-if="editando" label="Estado">
