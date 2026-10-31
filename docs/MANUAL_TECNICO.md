@@ -27,17 +27,21 @@ En producción la API sirve también la web compilada (una sola dirección): `ht
 backend/TechCare.Api/
   Auth/          PasswordService (hash), TokenService (JWT)
   Controllers/   una clase por área: Ordenes, Reparaciones, ReparacionRepuestos, Inventario, Compras,
-                 Catalogos, ClientesEquipos, CajaConsultas, Pagos, AccionesFacturacion, Reportes, Dashboard, Auth
+                 Catalogos (listas de lectura), Mantenimientos (alta y edición de los 6 catálogos), Usuarios,
+                 ClientesEquipos, CajaConsultas, Pagos, AccionesFacturacion, Reportes, Dashboard, Auth
   Data/          repositorios Dapper (SQL parametrizado o EXEC de procedimientos) y SqlConnectionFactory
   Dtos/          cuerpos de las peticiones
   Middleware/    SqlErrorMiddleware (errores SQL -> HTTP) y UserExtensions (idUsuario del token)
   Program.cs     configuración: JWT, una política por permiso, CORS, archivos estáticos
 frontend/app/
-  pages/         login, inicio, ordenes (lista, trazabilidad), caja, inventario, kardex, compras, reportes
-  components/    formularios de acciones (factura, pago, entrega, anulación, taller) y ReporteTabla
+  pages/         login, inicio (resumen del taller), clientes, ordenes (lista, nueva, trazabilidad), caja, inventario,
+                 kardex, compras, reportes, admin (usuarios, catalogos)
+  components/    formularios de acciones (factura, pago, entrega, anulación, taller), FormCliente, FormEquipo,
+                 FormUsuario, FormCatalogo y ReporteTabla
   stores/auth.ts sesión, roles y permisos;  composables/useApi.ts  llamadas con token y manejo de errores
   utils/         menú por permiso, definición de los 12 reportes, formatos (Q, fechas)
-database/        scripts numerados (ver sección 4), pruebas/ (T03–T14, R14), build_master.ps1, reconstruir.ps1
+database/        scripts numerados (ver sección 4), pruebas/ (T03–T14, R14, R16, verificar_reportes_5_1), build_master.ps1, reconstruir.ps1
+backend/pruebas/ prueba_api_e2e.py: prueba de punta a punta por la API (ver sección 7)
 deploy/          publicar.ps1 (web + API en Azure), crear-app-azure.ps1
 docs/            ER, normalización, este manual, guías del equipo
 ```
@@ -181,7 +185,20 @@ Todos son procedimientos `sp_Reporte_NN_*`: sin `SELECT *`, sin `DISTINCT`, con 
 | 9 | Movimientos de inventario | bodega, repuesto, fechas | `vw_MovimientosInventario` (LEFT JOIN por origen) |
 | 10 | Facturas con saldo y sus pagos | cliente, fechas, incluir pagadas | Dos resultados: facturas y pagos |
 | 11 | Ingresos por período | fechas | Mano de obra y repuestos por separado |
-| 12 | Trazabilidad de una orden | orden | 16 tablas, 5 resultados, LEFT JOIN: una orden sin factura o sin pagos sigue apareciendo (T12) |
+| 12 | Trazabilidad de una orden | orden | 19 tablas (con las de vistas y funciones), 5 resultados, LEFT JOIN: una orden sin factura o sin pagos sigue apareciendo (T12) |
+
+**Cumplimiento de la sección 5.1 del enunciado** (medido con `database/pruebas/verificar_reportes_5_1.sql`, evidencia en `docs/evidencia_pruebas/reportes_5_1.txt`). Las tablas son las reales que alcanza cada reporte, directamente o por las vistas y funciones que usa:
+
+| Reporte | Tablas | LEFT JOIN | Reporte | Tablas | LEFT JOIN |
+| --- | --- | --- | --- | --- | --- |
+| 1 Órdenes activas | 7 | sí | 7 Bajo mínimo | 4 | no |
+| 2 Historial de cliente | 8 | sí | 8 Compras por proveedor | 6 | no |
+| 3 Historial de equipo | 6 | sí | 9 Movimientos | 10 | sí |
+| 4 Productividad por técnico | 6 | no | 10 Facturas con saldo | 7 | no |
+| 5 Repuestos utilizados | 8 | no | 11 Ingresos por período | 2 | no |
+| 6 Inventario actual | 4 | no | 12 Trazabilidad | 19 | sí |
+
+Resultado: **9 reportes con 6 o más tablas** (se piden 4), **5 con LEFT JOIN** necesario (se piden 3: en 1 el técnico se asigna después; en 2, 3 y 12 una orden sin diagnóstico, factura o pagos debe seguir apareciendo; en 9 el documento origen es compra o reparación según el movimiento) y **ningún `SELECT *` ni `DISTINCT`** en el código.
 
 ### 4.9 Errores y su traducción
 
@@ -195,12 +212,16 @@ Cada procedimiento lanza `THROW` con un código propio y un mensaje en español:
 | 50301–50327 | Facturación (50325–50327: reportes 10–12) |
 | 51001–51099 | Triggers (51001–51003 estados, 51010 kárdex, 51011 pagos, 51090 DDL) |
 
-`SqlErrorMiddleware` de la API convierte los códigos 50000–51099 y las violaciones de PK, UNIQUE o FK (2627, 2601, 547) en **HTTP 409** con `{ "error": "mensaje" }`; la web muestra ese mensaje tal cual. La validación previa de la API responde **400**; sin sesión, **401**; sin permiso, **403**.
+`SqlErrorMiddleware` de la API convierte los códigos 50000–51099 y las violaciones de PK, UNIQUE, FK o CHECK (2627, 2601, 547) en **HTTP 409** con `{ "error": "mensaje" }`; la web muestra ese mensaje tal cual. La validación previa de la API responde **400**; sin sesión (o con el usuario desactivado), **401**; sin permiso, **403**.
+
+Para las violaciones de integridad el mensaje no es el de SQL Server: SQL Server menciona el nombre de la restricción violada (`UX_Cliente_Nit`, `UQ_Equipo_NumeroSerie`, `UQ_Repuesto_Codigo`…) y el middleware lo traduce con una tabla a una frase que nombra el dato repetido ("Ya existe un cliente con ese NIT.", "Ya existe un equipo con ese número de serie."). Las restricciones CHECK (`CK_*`) y las llaves foráneas tienen su propio texto, y una restricción que no esté en la tabla da un mensaje genérico seguro. Nunca se devuelve el texto crudo de SQL Server.
 
 ## 5. Seguridad
 
 - **Contraseñas:** `PasswordHasher` de ASP.NET Core (PBKDF2 con sal aleatoria por usuario). En la base solo está el hash.
-- **Sesión:** token JWT de 8 horas con el id del usuario, sus roles y sus permisos. El `idUsuario` que llega a los procedimientos sale **siempre del token**, nunca del cuerpo de la petición.
+- **Sesión:** token JWT de 8 horas con el id del usuario, sus roles y sus permisos. El `idUsuario` que llega a los procedimientos sale **siempre del token**, nunca del cuerpo de la petición. En cada petición el API comprueba además que el usuario siga `ACTIVO`: un usuario desactivado pierde el acceso al instante (401), no a las 8 horas. Los roles y permisos, en cambio, quedan fijos en el token hasta que vence: un cambio de roles se refleja al volver a iniciar sesión.
+- **Administración de usuarios:** solo quien tiene el permiso `USUARIO_GESTIONAR` (Administrador). Nadie puede desactivarse a sí mismo ni quitarse su propio rol de Administrador, y siempre debe quedar al menos un administrador activo. Los usuarios no se borran: se desactivan. Al crear o cambiar la contraseña, el API la guarda con hash (mínimo 8 caracteres).
+- **Catálogos:** crear y editar repuestos, proveedores, bodegas, categorías, tipos de equipo y marcas requiere `CATALOGO_GESTIONAR` (Administrador y Bodega). No existe ninguna ruta que modifique `Inventario.existencia`; los cambios de precio de un repuesto se auditan con el usuario que los hizo (`AuditoriaPrecioRepuesto`).
 - **Roles y permisos relacionales:** 5 roles (Administrador, Recepción, Técnico, Bodega, Caja) y 14 permisos en `Permiso`/`RolPermiso`. La API tiene una política por permiso y la web oculta menús y botones según los mismos permisos.
 - **Mínimo privilegio en la base:** la API se conecta como `techcare_app` (rol `rol_app`): puede ejecutar procedimientos y leer, y solo puede escribir en tablas de mantenimiento (clientes, equipos, catálogos, usuarios). Tiene `DENY` sobre las tablas transaccionales: el stock, el kárdex, las facturas y los pagos **solo cambian por procedimiento** (*ownership chaining*). Un `UPDATE Inventario SET existencia…` desde la aplicación falla.
 - **SQL parametrizado:** Dapper con parámetros en todas las consultas; no se concatenan valores del usuario.
@@ -220,4 +241,6 @@ Cada procedimiento lanza `THROW` con un código propio y un mensaje en español:
 - `database/pruebas/`: scripts de T03 a T14 y R14 que imprimen `OK`/`FALLA`. T04–T07, T13, T14 y R14 trabajan dentro de una transacción y terminan en `ROLLBACK`, así que no dejan cambios; T08–T10 **confirma** sus cambios a propósito (crea facturas, pagos y una entrega) y solo debe correrse en una base personal; T03, T11 y T12 son consultas de verificación.
 - `85_datos_escenarios.sql` verifica al final los conteos mínimos, los escenarios obligatorios y la coherencia de fechas, y falla si algo no se cumple.
 - CI en GitHub (`.github/workflows/db-build.yml`): cada PR que toca `database/` construye la base desde cero en SQL Server con el script maestro y los datos de prueba (incluidas las verificaciones de `85`); sin el check `sql` en verde no se puede mezclar a `master`.
+- `backend/pruebas/prueba_api_e2e.py`: prueba de punta a punta por la API real con los 5 roles (109 verificaciones: ciclo completo de una orden, compras, usuarios, catálogos, dashboard y los 12 reportes, incluidos los rechazos y que no dejen cambios). Se ejecuta contra una API conectada a una base de prueba: `python backend/pruebas/prueba_api_e2e.py http://localhost:5080`.
+- `database/pruebas/verificar_reportes_5_1.sql`: verifica sobre la base el cumplimiento de la sección 5.1 del enunciado en los 12 reportes (tablas, LEFT JOIN, sin `SELECT *` ni `DISTINCT`).
 - El plan con resultado esperado y obtenido de cada prueba está en `docs/PLAN_PRUEBAS.md`.
