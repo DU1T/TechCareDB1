@@ -139,6 +139,23 @@ builder.Services
             };
             options.Events = new JwtBearerEvents
             {
+                // Un usuario desactivado pierde el acceso de inmediato, aunque su token no haya vencido
+                OnTokenValidated = async context =>
+                {
+                    var db = context.HttpContext.RequestServices
+                        .GetRequiredService<SqlConnectionFactory>();
+
+                    await using var cn = db.Create();
+
+                    var estado = await Dapper.SqlMapper.ExecuteScalarAsync<string?>(
+                        cn,
+                        "SELECT estado FROM dbo.Usuario WHERE idUsuario = @id;",
+                        new { id = context.Principal!.IdUsuario() });
+
+                    if (estado != "ACTIVO")
+                        context.Fail("El usuario está inactivo o ya no existe.");
+                },
+
                 OnChallenge = async context =>
                 {
                     context.HandleResponse();
