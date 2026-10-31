@@ -252,4 +252,29 @@ public sealed class InventarioRepository
             ORDER BY u.nombreCompleto;
             """);
     }
+
+    public async Task<IEnumerable<dynamic>> TiposEquipoAsync()
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QueryAsync(
+            """
+            SELECT idTipoEquipo, nombre
+            FROM dbo.TipoEquipo
+            ORDER BY nombre, idTipoEquipo;
+            """);
+    }
+
+    public async Task<IEnumerable<dynamic>> MarcasAsync()
+    {
+        await using var cn = _db.Create();
+
+        return await cn.QueryAsync(
+            """
+            SELECT idMarca, nombre
+            FROM dbo.Marca
+            ORDER BY nombre, idMarca;
+            """);
+    }
+
 }
