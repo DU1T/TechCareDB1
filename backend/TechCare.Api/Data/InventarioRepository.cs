@@ -213,7 +213,7 @@ public sealed class InventarioRepository
 
         return await cn.QueryAsync(
             """
-            SELECT idProveedor, nit, nombre, contacto, telefono, email, estado
+            SELECT idProveedor, nit, nombre, contacto, telefono, email, direccion, estado
             FROM dbo.Proveedor
             ORDER BY nombre;
             """);
@@ -225,9 +225,9 @@ public sealed class InventarioRepository
 
         return await cn.QueryAsync(
             """
-            SELECT r.idRepuesto, r.codigo, r.nombre,
-                   r.idCategoria, c.nombre AS categoria,
-                   r.precioCompraRef, r.precioVenta, r.estado
+            SELECT r.idRepuesto, r.codigo, r.nombre, r.descripcion,
+                    r.idCategoria, c.nombre AS categoria,
+                    r.precioCompraRef, r.precioVenta, r.estado
             FROM dbo.Repuesto AS r
             INNER JOIN dbo.CategoriaRepuesto AS c ON c.idCategoria = r.idCategoria
             WHERE (@idCategoria IS NULL OR r.idCategoria = @idCategoria)
