@@ -111,7 +111,7 @@ async function guardar() {
           </UFormField>
           <UFormField
             :label="editando ? 'Nueva contraseña' : 'Contraseña'" :required="!editando"
-            :error="intento ? errores.password : undefined" :hint="editando ? 'Vacía = no cambia' : 'Mínimo 8'"
+            :error="intento ? errores.password : undefined" :hint="editando ? 'Vacía = no cambia' : (intento && errores.password ? undefined : 'Mínimo 8')"
           >
             <UInput v-model="form.password" type="password" autocomplete="new-password" class="w-full" />
           </UFormField>

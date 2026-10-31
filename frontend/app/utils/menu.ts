@@ -111,6 +111,6 @@ export const MENU: ItemMenu[] = [
     icono: 'i-lucide-package',
     grupo: 'Administración',
     permiso: 'CATALOGO_GESTIONAR',
-    listo: false,
+    listo: true,
   },
 ]
