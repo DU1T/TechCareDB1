@@ -1,6 +1,5 @@
-Evidencia E2E por la API (vie 30 oct 2026). Base de prueba construida desde master 0a5b49b + commit 9b8aac8 (rama c/core-correcciones); API conectada con un login temporal en rol_app (mínimo privilegio).
+Evidencia E2E por la API (sáb 31 oct 2026). Base de prueba construida desde master 4814cba (PR #51, validaciones de entrada); API conectada con un login temporal en rol_app (mínimo privilegio).
 Comando: backend/pruebas/prueba_api_e2e.py (ver docs/PLAN_PRUEBAS.md, sección 4).
-
 
 == 1. Seguridad y roles
   OK     los 5 roles inician sesión
@@ -133,4 +132,23 @@ Comando: backend/pruebas/prueba_api_e2e.py (ver docs/PLAN_PRUEBAS.md, sección 4
   OK     reporte 3 (historial por serie) muestra la orden
   OK     los técnicos pueden ver reportes, la caja también (REPORTE_VER)
 
-RESULTADO: 109 OK, 0 FALLA
+== Validaciones de entrada
+  OK     login con contraseña de 200 caracteres -> 401 sin consultar
+  OK     login con usuario de 60 caracteres -> 401
+  OK     usuario con espacios -> 400
+  OK     usuario de 2 caracteres -> 400
+  OK     contraseña sin números -> 400
+  OK     contraseña de 129 caracteres -> 400
+  OK     teléfono de usuario con letras -> 400
+  OK     NIT de cliente con letras -> 400
+  OK     teléfono de cliente con menos de 8 dígitos -> 400
+  OK     NIT con dígito verificador K y teléfono con +502 se aceptan
+  OK     NIT de proveedor inválido -> 400
+  OK     NIT de facturación inválido -> 400
+  OK     DPI de 3 dígitos -> 400
+  OK     mano de obra de Q 2,000,000 -> 400 (no llega a desbordar la base)
+  OK     compra con cantidad 10,001 -> 400
+  OK     compra con costo de Q 99,999,999 -> 400
+  OK     ajuste de 20,000 unidades -> 400
+
+RESULTADO: 126 OK, 0 FALLA

@@ -7,13 +7,13 @@ Entregable 08: casos funcionales (T01–T14 del enunciado) y de integridad (R14,
 | | |
 | --- | --- |
 | Fecha | viernes 30 de octubre de 2026 |
-| Versión | Scripts SQL y T01–T03: `master` `04b78c5` (incluye el trigger `trg_Pago_NoExcedeTotal`, PR #38); regresión de los 10 scripts SQL el mismo día sobre `master` `4473f17` (119 OK, 0 FALLA). Prueba de punta a punta y reportes §5.1: `master` `0a5b49b` + commit `9b8aac8` (correcciones del API) |
+| Versión | Scripts SQL y T01–T03: `master` `04b78c5` (incluye el trigger `trg_Pago_NoExcedeTotal`, PR #38); regresión de los 10 scripts SQL el mismo día sobre `master` `4473f17` (119 OK, 0 FALLA). Reportes §5.1: `master` `0a5b49b` + commit `9b8aac8` (correcciones del API). Prueba de punta a punta: `master` `4814cba` (PR #51, validaciones de entrada), sábado 31 de octubre |
 | Base | `TechCare_Pruebas` construida desde cero (script maestro + datos de prueba + `92`, los mismos pasos de `reconstruir.ps1`) en SQL Server 2022 (Docker), más `90_seguridad.sql` (usuario `techcare_app` en `rol_app`) |
 | API | ASP.NET Core 8 conectada como `techcare_app` (mínimo privilegio), igual que en producción |
 | Scripts | `database/pruebas/*.sql`, ejecutados con `sqlcmd` como `sa`; T01–T03 por la API con usuarios de cada rol |
 | Evidencia | `docs/evidencia_pruebas/<prueba>.txt`: salida completa, sin editar |
 
-**Resultado global: 119 verificaciones SQL en OK, 0 FALLA** (20 de integridad directa, 13 de R14, 15 de T04–T05, 14 de T06, 10 de T07, 18 de T08–T10, 4 de T12, 11 de T13, 13 de T14, T01–T03 y T11), **más 109 verificaciones de punta a punta por la API en OK, 0 FALLA** (sección 4) y el cumplimiento de la sección 5.1 del enunciado sobre los 12 reportes (sección 4.2).
+**Resultado global: 119 verificaciones SQL en OK, 0 FALLA** (20 de integridad directa, 13 de R14, 15 de T04–T05, 14 de T06, 10 de T07, 18 de T08–T10, 4 de T12, 11 de T13, 13 de T14, T01–T03 y T11), **más 126 verificaciones de punta a punta por la API en OK, 0 FALLA** (sección 4) y el cumplimiento de la sección 5.1 del enunciado sobre los 12 reportes (sección 4.2).
 
 Para repetirlas en una base personal: construir la base (`database/reconstruir.ps1`), abrir cada script de `database/pruebas/` y ejecutarlo; cada uno imprime `OK` o `FALLA` por verificación. T04–T07, T13, T14, R14 y R16 terminan en `ROLLBACK` (no dejan cambios); **T08–T10 confirma cambios** y se niega a correr en la base compartida `TechCare`.
 
@@ -78,7 +78,7 @@ Evidencia: `R16_integridad_directa.txt` (20 OK, 0 FALLA).
 
 ## 4. Prueba de punta a punta por la API (`backend/pruebas/prueba_api_e2e.py`)
 
-Los scripts SQL prueban la base; esta prueba usa el sistema como lo haría la aplicación: entra con los 5 roles, llama a la API real (conectada como `rol_app`, nunca como `sa`) y comprueba el resultado **y** que lo rechazado no deje cambios a medias. Evidencia completa: `docs/evidencia_pruebas/E2E_api.txt`. **109 OK, 0 FALLA.**
+Los scripts SQL prueban la base; esta prueba usa el sistema como lo haría la aplicación: entra con los 5 roles, llama a la API real (conectada como `rol_app`, nunca como `sa`) y comprueba el resultado **y** que lo rechazado no deje cambios a medias. Evidencia completa: `docs/evidencia_pruebas/E2E_api.txt`. **126 OK, 0 FALLA.**
 
 | Bloque | Qué se comprueba | Verificaciones |
 | --- | --- | --- |
@@ -93,6 +93,7 @@ Los scripts SQL prueban la base; esta prueba usa el sistema como lo haría la ap
 | Usuarios y roles | Alta, el usuario entra con su clave; usuario repetido (409, mensaje claro), clave corta y sin roles (400); cambio de roles y de clave (la vieja deja de servir); un usuario desactivado no puede entrar **y su sesión abierta deja de valer (401)**; un administrador no puede desactivarse ni quitarse su propio rol | 11 |
 | Catálogos y auditoría (T14) | Alta de repuesto, categoría, tipo de equipo, marca, proveedor y bodega; código repetido y categoría inexistente con mensaje claro; precio negativo o con 3 decimales (400); recepción sin permiso (403); el cambio de precio no altera el total de una factura ya emitida | 9 |
 | Dashboard y reportes | 9 indicadores del dashboard; órdenes abiertas = órdenes no cerradas de la lista; los 12 reportes responden con datos; la trazabilidad (12) trae pagos; el historial por serie (3) muestra la orden | 17 |
+| Validaciones de entrada | Login con contraseña de 200 caracteres o usuario de 60 (401 sin consultar la base); usuario con espacios o de 2 caracteres, contraseña sin números o de 129 caracteres, teléfono con letras o con menos de 8 dígitos, NIT con letras (cliente, proveedor y facturación) y DPI de 3 dígitos (400); un NIT con dígito verificador `K` y un teléfono con `+502` sí se aceptan; mano de obra de Q 2,000,000, compra con 10,001 unidades o costo de Q 99,999,999 y ajuste de 20,000 unidades (400; antes la mano de obra gigante desbordaba la base con un 500) | 17 |
 
 ### 4.1 Cómo repetirla
 
@@ -124,6 +125,8 @@ Además de los scripts, cada pantalla se probó al revisar su PR con la API real
 | Usuarios (PR #45, API del #42) | ✅ Alta, roles, cambio de clave, desactivación (la sesión abierta se cierra), usuario repetido y quitarse el propio rol rechazados con mensaje |
 | Catálogos (PR #47, API del #44 y #46) | ✅ Las 6 pestañas: alta, edición y desactivación; la descripción y la dirección se conservan al editar; el cambio de precio queda en la auditoría con el usuario; el inventario no se toca |
 | Recorrido en https://techcare-api-grupo-bhl.azurewebsites.net (`v1.0.1`) | ✅ 5 roles, reportes 1–12, caja, órdenes y trazabilidad, celular; consola del navegador sin errores |
+| Validaciones de entrada (PR #51), en local con la API real | ✅ 18 de 18: login con `maxlength` 50 y 128; usuario con espacios, contraseña sin número y teléfono con letras muestran su mensaje; NIT inválido y teléfono corto en clientes muestran su mensaje y un NIT con `K` y un teléfono con `+502` no; buscadores de usuarios, clientes, inventario, caja y nueva orden con `maxlength` 100 (número de orden, 12); el contador de la nueva orden sube al escribir («11 / 500») |
+| Recorrido en la URL pública tras publicar `4814cba` (31 oct) | ✅ 31 de 31: la web publicada trae las validaciones; 5 roles; 90 inventario, 145 kárdex, 20 compras, 30 facturas (11 con saldo, Q 3,550.40), 10 usuarios; reportes 1–11; recargar en `/inventario` sin 404; las 8 reglas nuevas responden 400 o 401 con su mensaje y no escriben nada (los conteos no cambian) |
 
 ## 6. Hallazgos durante las pruebas
 

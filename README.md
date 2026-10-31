@@ -143,7 +143,7 @@ Los que dicen "no" terminan en `ROLLBACK` o solo leen: se pueden repetir las vec
 python backend/pruebas/prueba_api_e2e.py http://localhost:5080
 ```
 
-Debe terminar con `RESULTADO: 109 OK, 0 FALLA`. El plan completo, con resultado esperado y obtenido, está en [`docs/PLAN_PRUEBAS.md`](docs/PLAN_PRUEBAS.md).
+Debe terminar con `RESULTADO: 126 OK, 0 FALLA`. El plan completo, con resultado esperado y obtenido, está en [`docs/PLAN_PRUEBAS.md`](docs/PLAN_PRUEBAS.md).
 
 ## Estructura del repositorio
 
