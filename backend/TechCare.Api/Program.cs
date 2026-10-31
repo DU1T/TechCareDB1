@@ -68,6 +68,7 @@ builder.Services.AddScoped<InventarioRepository>();
 builder.Services.AddScoped<ReportesRepository>();
 builder.Services.AddScoped<FacturacionRepository>();
 builder.Services.AddScoped<ClientesEquiposRepository>();
+builder.Services.AddScoped<MantenimientosRepository>();
 
 builder.Services.AddSingleton<PasswordService>();
 builder.Services.AddSingleton<TokenService>();
