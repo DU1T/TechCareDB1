@@ -1,0 +1,11 @@
+numeroOrden fechaIngreso estado prioridad problemaReportado diagnostico tecnico estadoReparacion costoManoObra fechaFin serie numero totalFacturado
+----------- ------------ ------ --------- ----------------- ----------- ------- ---------------- ------------- -------- ----- ------ --------------
+OS-000003 2026-08-05 08:00:00 ENTREGADO BAJA Equipo presenta fallas de funcionamiento, rendimiento o encendido. Se realizaron pruebas de funcionamiento y revision de componentes. Se recomienda mantenimiento o reparacion tecnica. Tecnico Uno FINALIZADA 160.00 2026-08-05 16:00:00 A 1 1159.20
+OS-000002 2026-08-03 08:00:00 CANCELADO BAJA Falla intermitente reportada por el cliente. NULL NULL NULL NULL NULL NULL NULL NULL
+OS-000001 2026-08-02 08:00:00 CANCELADO BAJA Falla intermitente reportada por el cliente. NULL NULL NULL NULL NULL NULL NULL NULL
+
+totalOrdenes canceladas listas reparacionesFinalizadas ordenesSinFactura
+------------ ---------- ------ ----------------------- -----------------
+3 2 0 1 2
+
+T11 OK: Historial tecnico validado correctamente.

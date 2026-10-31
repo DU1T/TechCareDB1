@@ -50,6 +50,8 @@ export default defineNuxtConfig({
         'lucide:refresh-cw',
         'lucide:check',
         'lucide:arrow-right',
+        'lucide:pencil',
+        'lucide:laptop',
       ],
     },
   },

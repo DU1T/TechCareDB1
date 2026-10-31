@@ -1,0 +1,20 @@
+resultado
+---------
+OK     DELETE de un movimiento -> error 51010
+OK     DELETE de todo el kárdex -> error 51010
+OK     UPDATE de cantidad -> error 51010
+OK     UPDATE solo de la observación -> error 51010
+OK     el kárdex sigue con 145 movimientos (antes 145)
+OK     el movimiento 1 quedó igual (diferencias: 0)
+OK     el ajuste es un movimiento nuevo: AJUSTE SALIDA de 1 con motivo
+OK     encadenado al anterior: 4 -> 3
+OK     existencia = suma del kárdex tras el ajuste (descuadres: 0)
+OK     después del ROLLBACK el kárdex vuelve a 145 movimientos
+OK     DELETE de una factura con pagos -> error 547 (FK)
+OK     DELETE de una compra recibida -> error 547 (FK)
+OK     la factura y la compra siguen en la base
+
+resumen
+-------
+R14: 13 OK, 0 FALLA
+

@@ -37,4 +37,13 @@ public sealed class CatalogosController : ControllerBase
     [HttpGet("tecnicos")]
     public async Task<IActionResult> Tecnicos()
         => Ok(await _repo.TecnicosAsync());
+
+    [HttpGet("tipos-equipo")]
+    public async Task<IActionResult> TiposEquipo()
+        => Ok(await _repo.TiposEquipoAsync());
+
+    [HttpGet("marcas")]
+    public async Task<IActionResult> Marcas()
+        => Ok(await _repo.MarcasAsync());
+
 }

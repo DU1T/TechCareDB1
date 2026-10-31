@@ -1,0 +1,78 @@
+Orden A = 33 · Orden B = 34 · Orden no LISTO = 1
+idFactura serie numero total
+--------- ----- ------ -----
+31 A 31 515.20
+
+prueba idFactura serie numero nitFacturacion nombreFacturacion subtotal impuesto total
+------ --------- ----- ------ -------------- ----------------- -------- -------- -----
+T08 factura 31 A 31 1245489-1 Transportes Rápidos, S.A. 460.00 55.20 515.20
+
+prueba numeroLinea tipoLinea descripcion cantidad precioUnitario subtotalLinea
+------ ----------- --------- ----------- -------- -------------- -------------
+T08 líneas 1 MANO_OBRA Mano de obra OS-000033 1 460.00 460.00
+
+OK   T08: total = subtotal + 12 %
+OK   T08: segunda factura rechazada (50313)
+OK   T08: orden que no está LISTO rechazada (50312)
+OK   T08: usuario sin rol de caja rechazado (50301)
+idPago saldoRestante
+------ -------------
+46 343.47
+
+OK   T09: pago 1, saldo = 343.47
+idPago saldoRestante
+------ -------------
+47 171.74
+
+OK   T09: pago 2, saldo = 171.74
+OK   Entrega con saldo pendiente rechazada (50324)
+idPago saldoRestante
+------ -------------
+48 0.00
+
+OK   T09: el tercer pago completa la factura, saldo = 0
+OK   T09: factura ya pagada rechazada (50307)
+prueba idPago monto estado fechaPago metodo
+------ ------ ----- ------ --------- ------
+T09 pagos 46 171.73 APLICADO 2026-10-30 07:20:57 EFECTIVO
+T09 pagos 47 171.73 APLICADO 2026-10-30 07:20:57 EFECTIVO
+T09 pagos 48 171.74 APLICADO 2026-10-30 07:20:57 EFECTIVO
+
+idFactura serie numero total
+--------- ----- ------ -----
+32 A 32 526.40
+
+OK   T10: pago mayor al saldo rechazado (50308)
+OK   T10: tarjeta sin referencia rechazada (50304)
+OK   T10: ningún pago fue insertado
+prueba saldo total
+------ ----- -----
+T10 saldo sin cambios 526.40 526.40
+
+idPago saldoRestante
+------ -------------
+49 516.40
+
+OK   Anular sin motivo rechazado (50315)
+idPago saldoActual
+------ -----------
+49 526.40
+
+OK   Pago anulado (no borrado) y el saldo volvió a subir
+OK   Anular un pago ya anulado rechazado (50317)
+idEntrega numeroOrden estado
+--------- ----------- ------
+17 OS-000033 ENTREGADO
+
+OK   Orden A entregada
+prueba estadoAnterior estadoNuevo fechaCambio idUsuario observacion
+------ -------------- ----------- ----------- --------- -----------
+Historial orden A NULL RECIBIDO 2026-09-15 08:00:00 3 Orden registrada
+Historial orden A RECIBIDO DIAGNOSTICO 2026-09-15 10:00:00 5 Inicio del diagnostico tecnico
+Historial orden A DIAGNOSTICO ESPERANDO_AUTORIZACION 2026-09-15 12:00:00 5 Diagnostico registrado; pendiente de autorizacion
+Historial orden A ESPERANDO_AUTORIZACION REPARACION 2026-09-15 14:00:00 5 Reparacion iniciada
+Historial orden A REPARACION LISTO 2026-09-15 16:00:00 5 Reparacion finalizada
+Historial orden A LISTO ENTREGADO 2026-10-30 07:20:57 3 Entrega a Cliente de prueba
+
+OK   Anular el pago de una orden entregada rechazado (50318)
+OK   UPDATE directo a ENTREGADO rechazado por el trigger (51003)

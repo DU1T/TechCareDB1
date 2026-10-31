@@ -1,0 +1,41 @@
+Evidencia §5.1 de los reportes (vie 30 oct 2026). Base de prueba construida desde master 0a5b49b.
+Comando: database/pruebas/verificar_reportes_5_1.sql sobre una base TechCare_* (solo lee el catálogo).
+
+reporte tablas_reales vistas funciones left_join select_estrella distinct_usado
+------- ------------- ------ --------- --------- --------------- --------------
+sp_Reporte_01_OrdenesActivas 7 1 0 1 0 0
+sp_Reporte_02_HistorialCliente 8 0 0 7 0 0
+sp_Reporte_03_HistorialEquipo 6 0 1 4 0 0
+sp_Reporte_04_ProductividadTecnico 6 0 0 0 0 0
+sp_Reporte_05_RepuestosUtilizados 8 0 0 0 0 0
+sp_Reporte_06_Inventario 4 1 0 0 0 0
+sp_Reporte_07_BajoMinimo 4 1 0 0 0 0
+sp_Reporte_08_ComprasProveedor 6 0 0 0 0 0
+sp_Reporte_09_Kardex 10 1 0 6 0 0
+sp_Reporte_10_FacturasSaldo 7 1 2 0 0 0
+sp_Reporte_11_IngresosPeriodo 2 0 0 0 0 0
+sp_Reporte_12_Trazabilidad 19 1 2 14 0 0
+
+ 
+Tablas reales alcanzadas por cada reporte:
+reporte tablas
+------- ------
+sp_Reporte_01_OrdenesActivas Cliente, Equipo, EstadoOrden, Marca, OrdenServicio, TipoEquipo, Usuario
+sp_Reporte_02_HistorialCliente Cliente, Diagnostico, Equipo, Factura, Marca, OrdenServicio, TipoEquipo, Usuario
+sp_Reporte_03_HistorialEquipo Diagnostico, Equipo, Factura, OrdenServicio, Reparacion, Usuario
+sp_Reporte_04_ProductividadTecnico ActividadReparacion, Diagnostico, Reparacion, Rol, Usuario, UsuarioRol
+sp_Reporte_05_RepuestosUtilizados Bodega, CategoriaRepuesto, DetalleRepuesto, Diagnostico, OrdenServicio, Reparacion, Repuesto, Usuario
+sp_Reporte_06_Inventario Bodega, CategoriaRepuesto, Inventario, Repuesto
+sp_Reporte_07_BajoMinimo Bodega, CategoriaRepuesto, Inventario, Repuesto
+sp_Reporte_08_ComprasProveedor Bodega, Compra, DetalleCompra, Proveedor, Repuesto, Usuario
+sp_Reporte_09_Kardex Bodega, Compra, DetalleRepuesto, Diagnostico, MovimientoInventario, OrdenServicio, Proveedor, Reparacion, Repuesto, Usuario
+sp_Reporte_10_FacturasSaldo Cliente, Equipo, Factura, MetodoPago, OrdenServicio, Pago, Usuario
+sp_Reporte_11_IngresosPeriodo DetalleFactura, Factura
+sp_Reporte_12_Trazabilidad Bodega, Cliente, Compra, DetalleRepuesto, Diagnostico, Entrega, Equipo, Factura, HistorialEstadoOrden, Marca, MetodoPago, MovimientoInventario, OrdenServicio, Pago, Proveedor, Reparacion, Repuesto, TipoEquipo, Usuario
+
+ 
+Resumen §5.1:
+reportes con_6_o_mas_tablas con_left_join con_select_estrella_o_distinct resultado
+-------- ------------------ ------------- ------------------------------ ---------
+12 9 5 0 CUMPLE
+

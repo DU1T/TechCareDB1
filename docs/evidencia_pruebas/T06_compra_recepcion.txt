@@ -1,0 +1,21 @@
+resultado
+---------
+OK     registrar con usuario de caja (no bodega) -> error 50110
+OK     registrar sin líneas -> error 50115
+OK     documento del proveedor repetido (FAC-1001) -> error 50119
+OK     recibir otra vez una compra RECIBIDA -> error 50112
+OK     los errores no dejaron compras, movimientos ni transacciones abiertas
+OK     compra 21 registrada en PENDIENTE
+OK     cada línea guarda el costo de esta compra, no el del catálogo (diferencias: 0)
+OK     registrar todavía no mueve el inventario
+OK     compra en RECIBIDA con fecha y usuario de recepción
+OK     existencias de los 2 repuestos suben en la cantidad comprada (diferencias: 0)
+OK     el repuesto nuevo obtiene su fila en la bodega con 3 unidades
+OK     un movimiento ENTRADA de COMPRA por línea, con su costo (3 de 3)
+OK     existencia = suma del kárdex (descuadres: 0)
+OK     después del ROLLBACK no queda la compra, ni sus movimientos, ni el repuesto de prueba
+
+resumen
+-------
+T06: 14 OK, 0 FALLA
+

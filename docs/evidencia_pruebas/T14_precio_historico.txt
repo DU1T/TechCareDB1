@@ -1,0 +1,20 @@
+resultado
+---------
+OK     repuesto ALM-003 aparece en 1 factura(s) y 1 uso(s) en reparaciones
+OK     precio de venta del catálogo: 450.00 -> 495.00
+OK     facturas: subtotal, impuesto, total y saldo iguales (diferencias: 0)
+OK     líneas de factura iguales (diferencias: 0)
+OK     repuestos usados: precio y costo congelados (diferencias: 0)
+OK     costos de compra iguales (diferencias: 0)
+OK     kárdex igual (diferencias: 0)
+OK     auditoría: 1 fila nueva
+OK     auditoría guarda venta 450.00 -> 495.00 y compra 290.00 -> 304.50
+OK     auditoría guarda el usuario de la app: administrador1 (en la base: sa)
+OK     UPDATE de 2 repuestos deja 2 filas más (total 3 nuevas)
+OK     cambio sin precio distinto no audita (siguen 3 nuevas)
+OK     después del ROLLBACK el precio vuelve a 450.00 y la auditoría a 0 filas
+
+resumen
+-------
+T14: 13 OK, 0 FALLA
+

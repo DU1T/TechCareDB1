@@ -1,0 +1,22 @@
+resultado
+---------
+OK     datos: reparación 35 en proceso; ALM-001 en BOD-MIX tiene 0
+OK     T04 pedir 1 de ALM-001 en BOD-MIX (hay 0) -> error 50106
+OK     T04 cantidad 0 -> error 50101
+OK     T04 usuario de caja (no técnico) -> error 50102
+OK     T04 reparación ya FINALIZADA -> error 50103
+OK     T04 repuesto que no está en la bodega -> error 50104
+OK     T04 nada cambió: inventario, repuestos usados y kárdex iguales que antes
+OK     T04 ninguna transacción quedó abierta
+OK     T05 detalle con precio 350.00 y costo 210.00 del catálogo de hoy
+OK     T05 existencia descontada: 4 -> 3
+OK     T05 movimiento SALIDA REPARACION que apunta al detalle 15
+OK     T05 encadenado con el movimiento anterior: 4 -> 3
+OK     T05 consumir las 3 restantes deja existencia 0 (SIN_STOCK)
+OK     T05 existencia = suma del kárdex (descuadres: 0)
+OK     después del ROLLBACK la existencia vuelve a 4 y no quedan detalles ni movimientos
+
+resumen
+-------
+T04-T05: 15 OK, 0 FALLA
+

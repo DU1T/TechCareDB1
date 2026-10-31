@@ -130,14 +130,26 @@ En [`database/pruebas/`](database/pruebas/) hay un script por prueba del plan. S
 | `T13_estado_stock.sql` | estado del stock por bodega y dashboard | no |
 | `T14_precio_historico.sql` | cambiar un precio no altera facturas viejas; queda auditado | no |
 | `R14_kardex_inmutable.sql` | el kárdex no se edita ni se borra | no |
+| `R16_integridad_directa.sql` | las restricciones rechazan datos inválidos escritos directo en SQL | no |
+| `verificar_reportes_5_1.sql` | los 12 reportes cumplen la sección 5.1 del enunciado (tablas, `LEFT JOIN`, sin `SELECT *`/`DISTINCT`); solo lee | no |
 
-Los que dicen "no" terminan en `ROLLBACK`: se pueden repetir las veces que quieras.
+Los que dicen "no" terminan en `ROLLBACK` o solo leen: se pueden repetir las veces que quieras.
+
+## Prueba de punta a punta por la API
+
+[`backend/pruebas/prueba_api_e2e.py`](backend/pruebas/prueba_api_e2e.py) usa el sistema como lo haría la aplicación: entra con los 5 roles y recorre el ciclo completo de una orden (cliente, equipo, orden, diagnóstico, reparación con repuestos, factura, pagos y entrega), las compras, los usuarios, los catálogos, el dashboard y los 12 reportes, incluidos los rechazos. Con la API corriendo sobre una **base de prueba** (crea datos), no sobre la compartida:
+
+```powershell
+python backend/pruebas/prueba_api_e2e.py http://localhost:5080
+```
+
+Debe terminar con `RESULTADO: 109 OK, 0 FALLA`. El plan completo, con resultado esperado y obtenido, está en [`docs/PLAN_PRUEBAS.md`](docs/PLAN_PRUEBAS.md).
 
 ## Estructura del repositorio
 
 ```text
 database/   scripts numerados de la base (01 tablas … 92 auditoría), datos de prueba, reconstruir.ps1 y pruebas/
-backend/    API .NET 8 (TechCare.Api): controladores, acceso a datos con Dapper, JWT
+backend/    API .NET 8 (TechCare.Api): controladores, acceso a datos con Dapper, JWT; pruebas/ (prueba de punta a punta)
 frontend/   web Nuxt 4 + Nuxt UI
 deploy/     publicar.ps1 (una sola URL; -Azure la sube) y crear-app-azure.ps1
 docs/       diagrama ER, normalización, casos de prueba y guías del equipo
