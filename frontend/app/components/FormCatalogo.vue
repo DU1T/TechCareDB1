@@ -62,6 +62,9 @@ const errores = computed(() => {
       else if (c.max && String(v ?? '').length > c.max) e[c.clave] = `Máximo ${c.max} caracteres.`
       else if (c.formato === 'nit' && t && !nitValido(t)) e[c.clave] = MENSAJE.nit
       else if (c.formato === 'telefono' && !telefonoValido(t)) e[c.clave] = MENSAJE.telefono
+      else if (c.formato === 'codigo' && t && !codigoValido(t)) e[c.clave] = MENSAJE.codigo
+      else if (c.formato === 'nombre' && t && errorNombre(t, c.max ?? 150, false)) e[c.clave] = errorNombre(t, c.max ?? 150, false)
+      else if (c.formato === 'email' && !emailValido(t)) e[c.clave] = MENSAJE.email
     }
   }
   return e
@@ -100,7 +103,8 @@ async function guardar() {
       <form ref="alcance" class="space-y-4" novalidate @submit.prevent="guardar">
         <UFormField
           v-for="c in def.campos" :key="c.clave" :label="c.etiqueta" :required="c.obligatorio"
-          :error="intento ? errores[c.clave] : undefined"
+          :error="mostrar(intento, errores[c.clave], valores[c.clave], c.formato && c.formato !== 'email' ? INVALIDO[c.formato] : c.formato === 'email' ? /\s/ : undefined)"
+          :hint="c.tipo === 'texto' && c.max ? limite(String(valores[c.clave] ?? ''), c.max, c.ayuda ?? (c.obligatorio ? undefined : 'Opcional')) : c.tipo === 'area' && c.max ? contador(String(valores[c.clave] ?? ''), c.max) : undefined"
         >
           <USelect v-if="c.tipo === 'categoria'" v-model="valores[c.clave]" :items="categorias" placeholder="Selecciona" class="w-full" />
           <UTextarea v-else-if="c.tipo === 'area'" v-model="valores[c.clave]" :rows="2" :maxlength="c.max" class="w-full" />

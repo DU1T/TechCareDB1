@@ -122,7 +122,7 @@ const quedaria = computed(() => {
   return ajuste.fila.existencia + (ajuste.tipo === 'ENTRADA' ? c : -c)
 })
 const ajusteValido = computed(
-  () => ajuste.cantidad > 0 && ajuste.cantidad <= LIMITE.cantidadMax && quedaria.value >= 0 && ajuste.motivo.trim().length > 0 && ajuste.motivo.length <= 250,
+  () => ajuste.cantidad > 0 && ajuste.cantidad <= LIMITE.cantidadMax && quedaria.value >= 0 && ajuste.motivo.trim().length >= 5 && ajuste.motivo.length <= 250,
 )
 
 async function guardarAjuste() {
@@ -249,7 +249,7 @@ async function guardarAjuste() {
           <UFormField label="Cantidad">
             <UInputNumber v-model="ajuste.cantidad" :min="1" :max="LIMITE.cantidadMax" class="w-40" />
           </UFormField>
-          <UFormField label="Motivo" :hint="`Queda en el kárdex · ${contador(ajuste.motivo, 250)}`" :error="ajuste.motivo.length > 250 ? 'Máximo 250 caracteres' : undefined">
+          <UFormField label="Motivo" :hint="`Queda en el kárdex · ${contador(ajuste.motivo, 250)}`" :error="ajuste.motivo.trim().length > 0 && ajuste.motivo.trim().length < 5 ? 'Explica el motivo (al menos 5 caracteres).' : undefined">
             <UTextarea v-model="ajuste.motivo" :rows="2" maxlength="250" class="w-full" placeholder="Conteo físico, producto dañado..." />
           </UFormField>
           <p class="text-sm" :class="quedaria < 0 ? 'text-red-700' : 'text-bruma-600'" aria-live="polite">

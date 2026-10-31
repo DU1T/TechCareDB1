@@ -72,6 +72,7 @@ const problema = computed(() => {
   if (!compra.idBodegaDestino) return 'Elige la bodega destino.'
   if (!compra.numeroDocumento.trim()) return 'Escribe el número de documento (factura del proveedor).'
   if (compra.numeroDocumento.trim().length > 30) return 'El número de documento admite 30 caracteres.'
+  if (!codigoValido(compra.numeroDocumento)) return `Número de documento: ${MENSAJE.codigo}`
   if (compra.observaciones.length > 300) return 'Las observaciones admiten 300 caracteres.'
   if (lineas.value.length === 0) return 'Agrega al menos una línea.'
   if (lineas.value.some((l) => !l.idRepuesto)) return 'Cada línea necesita un repuesto.'
@@ -129,7 +130,7 @@ async function guardar() {
         <UFormField label="Bodega destino" required>
           <USelect v-model="compra.idBodegaDestino" :items="bodegas" placeholder="Elige una" class="w-full" />
         </UFormField>
-        <UFormField label="Número de documento" required hint="Factura del proveedor">
+        <UFormField label="Número de documento" required :hint="limite(compra.numeroDocumento, 30, 'Factura del proveedor · ej. FAC-1021')" :error="INVALIDO.codigo.test(compra.numeroDocumento) ? MENSAJE.codigo : undefined">
           <UInput v-model="compra.numeroDocumento" maxlength="30" class="w-full" />
         </UFormField>
         <UFormField label="Observaciones" class="sm:col-span-3" :hint="contador(compra.observaciones, 300)">

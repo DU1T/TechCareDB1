@@ -78,6 +78,7 @@ const errores = computed(() => {
   else if (form.modelo.length > 80) e.modelo = 'Máximo 80 caracteres.'
   if (!form.numeroSerie.trim()) e.serie = 'Escribe el número de serie.'
   else if (form.numeroSerie.length > 60) e.serie = 'Máximo 60 caracteres.'
+  else if (!codigoValido(form.numeroSerie)) e.serie = MENSAJE.codigo
   if (form.descripcion.length > 300) e.descripcion = 'Máximo 300 caracteres.'
   return e
 })
@@ -127,10 +128,10 @@ async function guardar() {
           </UFormField>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
-          <UFormField label="Modelo" required :error="intento ? errores.modelo : undefined">
+          <UFormField label="Modelo" required :error="mostrar(intento, errores.modelo)" :hint="limite(form.modelo, 80)">
             <UInput v-model="form.modelo" maxlength="80" class="w-full" />
           </UFormField>
-          <UFormField label="Número de serie" required :error="intento ? errores.serie : undefined">
+          <UFormField label="Número de serie" required :error="mostrar(intento, errores.serie, form.numeroSerie, INVALIDO.codigo)" :hint="limite(form.numeroSerie, 60, 'Sin espacios')">
             <UInput v-model="form.numeroSerie" maxlength="60" class="w-full" />
           </UFormField>
         </div>

@@ -32,6 +32,7 @@ public sealed class MantenimientosController : ControllerBase
         => precio.HasValue && precio >= 0 && precio <= 9999999999.99m;
     private static string? ValidarRepuesto(GuardarRepuestoDto d)
         => Texto(d.Codigo,30,"Codigo") ?? Texto(d.Nombre,120,"Nombre")
+           ?? (!Validacion.CodigoValido(d.Codigo) ? "El código " + Validacion.MensajeCodigo : null)
            ?? Texto(d.Descripcion,300,"Descripcion",false)
            ?? (d.IdCategoria.GetValueOrDefault() <= 0 ? "IdCategoria debe ser positivo." : null)
            ?? (!PrecioValido(d.PrecioCompraRef) || !PrecioValido(d.PrecioVenta) ? "Precios deben ser no negativos y de hasta 10 enteros y 2 decimales." : null)
@@ -40,12 +41,16 @@ public sealed class MantenimientosController : ControllerBase
     private static string? ValidarProveedor(GuardarProveedorDto d)
         => Texto(d.Nit,15,"NIT") ?? Texto(d.Nombre,150,"Nombre")
            ?? (!Validacion.NitValido(d.Nit) ? "El NIT debe ser CF o números con su dígito verificador (por ejemplo 1234567-8)." : null)
+           ?? (!Validacion.NombreValido(d.Nombre) ? "El nombre " + Validacion.MensajeNombre : null)
            ?? Texto(d.Contacto,120,"Contacto",false) ?? Texto(d.Telefono,20,"Telefono",false)
+           ?? (!string.IsNullOrWhiteSpace(d.Contacto) && !Validacion.NombreValido(d.Contacto) ? "El contacto " + Validacion.MensajeNombre : null)
            ?? (!Validacion.TelefonoValido(d.Telefono) ? "El teléfono debe tener al menos 8 dígitos y solo números, espacios, +, - o paréntesis." : null)
            ?? Texto(d.Email,120,"Email",false) ?? Texto(d.Direccion,250,"Direccion",false)
+           ?? (!Validacion.EmailValido(d.Email) ? Validacion.MensajeEmail : null)
            ?? Estado(d.Estado,"ACTIVO","INACTIVO");
     private static string? ValidarBodega(GuardarBodegaDto d)
         => Texto(d.Codigo,10,"Codigo") ?? Texto(d.Nombre,80,"Nombre")
+           ?? (!Validacion.CodigoValido(d.Codigo) ? "El código " + Validacion.MensajeCodigo : null)
            ?? Texto(d.Ubicacion,200,"Ubicacion",false)
            ?? Estado(d.Estado,"ACTIVA","INACTIVA");
     private static IActionResult Error(string mensaje) => new BadRequestObjectResult(new { error = mensaje });

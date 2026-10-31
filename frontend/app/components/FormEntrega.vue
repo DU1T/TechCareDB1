@@ -22,7 +22,7 @@ watch(abierto, (v) => {
 })
 
 const errores = computed(() => ({
-  nombre: !form.nombre.trim() ? 'Escribe quién recibe el equipo.' : form.nombre.length > 120 ? 'Máximo 120 caracteres.' : '',
+  nombre: !form.nombre.trim() ? 'Escribe quién recibe el equipo.' : errorNombre(form.nombre, 120),
   documento: form.documento.length > 20 ? 'Máximo 20 caracteres.' : !dpiValido(form.documento) ? MENSAJE.dpi : '',
   observaciones: form.observaciones.length > 300 ? 'Máximo 300 caracteres.' : '',
 }))
@@ -59,10 +59,10 @@ async function entregar() {
         <p class="text-sm text-bruma-600">
           Al entregar, <strong class="text-highlighted">{{ orden.numeroOrden }}</strong> queda cerrada y ya no se puede modificar.
         </p>
-        <UFormField label="Quién recibe" required :error="intento ? errores.nombre : undefined">
+        <UFormField label="Quién recibe" required :error="mostrar(intento, errores.nombre, form.nombre, INVALIDO.nombre)" :hint="limite(form.nombre, 120)">
           <UInput v-model="form.nombre" maxlength="120" class="w-full" />
         </UFormField>
-        <UFormField label="Documento de quien recibe" :error="intento && errores.documento ? errores.documento : undefined" hint="Opcional · DPI de 13 dígitos">
+        <UFormField label="Documento de quien recibe" :error="mostrar(intento, errores.documento, form.documento, INVALIDO.dpi)" hint="Opcional · DPI de 13 dígitos">
           <UInput v-model="form.documento" placeholder="1234 56789 0101" maxlength="20" inputmode="numeric" class="w-full" />
         </UFormField>
         <UFormField label="Observaciones" :error="errores.observaciones || undefined" :hint="`Opcional · ${contador(form.observaciones, 300)}`">

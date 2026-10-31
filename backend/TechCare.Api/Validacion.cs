@@ -67,4 +67,43 @@ public static partial class Validacion
 
     public static bool MontoValido(decimal? monto)
         => monto is >= 0 and <= MontoMaximo;
+
+    public static bool DosDecimales(decimal monto)
+        => decimal.Round(monto, 2) == monto;
+
+    // Nombre de persona o empresa: letras, números, espacios y . , ' & ( ) - /, con al menos 2 letras
+    [GeneratedRegex(@"^[\p{L}\p{N} .,'&()/-]+$")]
+    private static partial Regex NombreRegex();
+
+    // Código, número de serie o de documento: sin espacios
+    [GeneratedRegex(@"^[A-Za-z0-9._/-]+$")]
+    private static partial Regex CodigoRegex();
+
+    // Referencia de pago: letras, números, espacios y . _ - /
+    [GeneratedRegex(@"^[A-Za-z0-9 ._/-]+$")]
+    private static partial Regex ReferenciaRegex();
+
+    [GeneratedRegex(@"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$")]
+    private static partial Regex EmailRegex();
+
+    public static bool NombreValido(string? nombre)
+    {
+        if (string.IsNullOrWhiteSpace(nombre)) return false;
+        var t = nombre.Trim();
+        return NombreRegex().IsMatch(t) && t.Count(char.IsLetter) >= 2;
+    }
+
+    // Opcionales: vacío es válido
+    public static bool EmailValido(string? email)
+        => string.IsNullOrWhiteSpace(email) || EmailRegex().IsMatch(email.Trim());
+
+    public static bool CodigoValido(string? codigo)
+        => codigo is not null && CodigoRegex().IsMatch(codigo.Trim());
+
+    public static bool ReferenciaValida(string? referencia)
+        => string.IsNullOrWhiteSpace(referencia) || ReferenciaRegex().IsMatch(referencia.Trim());
+
+    public const string MensajeNombre = "debe tener al menos 2 letras y solo letras, números, espacios y . , ' & ( ) - /.";
+    public const string MensajeCodigo = "no lleva espacios: solo letras, números y . _ - /.";
+    public const string MensajeEmail = "El correo no es válido (ejemplo: nombre@dominio.com).";
 }

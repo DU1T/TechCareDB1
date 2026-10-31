@@ -216,8 +216,14 @@ public sealed class ClientesEquiposController : ControllerBase
             nit.Equals("CF", StringComparison.OrdinalIgnoreCase))
             return "Una empresa debe tener NIT distinto de CF.";
 
+        if (!Validacion.NombreValido(nombre))
+            return "El nombre " + Validacion.MensajeNombre;
+
         if (telefono is null && email is null)
             return "Debe indicar telefono o correo electronico.";
+
+        if (!Validacion.EmailValido(email))
+            return Validacion.MensajeEmail;
 
         if ((telefono?.Length ?? 0) > 20 ||
             (email?.Length ?? 0) > 120 ||
@@ -265,6 +271,9 @@ public sealed class ClientesEquiposController : ControllerBase
             serie is null || serie.Length > 60 ||
             (Limpiar(dto.Descripcion)?.Length ?? 0) > 300)
             return "Revise el modelo, numero de serie y descripcion.";
+
+        if (!Validacion.CodigoValido(serie))
+            return "El número de serie " + Validacion.MensajeCodigo;
 
         var estado = Limpiar(dto.Estado)?.ToUpperInvariant();
 

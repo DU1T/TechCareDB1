@@ -62,12 +62,18 @@ public sealed class UsuariosController : ControllerBase
             nombre.Trim().Length > 120)
             return "Ingrese el nombre completo (maximo 120 caracteres).";
 
+        if (!Validacion.NombreValido(nombre))
+            return "El nombre completo " + Validacion.MensajeNombre;
+
         if ((email?.Length ?? 0) > 120 ||
             (telefono?.Length ?? 0) > 20)
             return "Revise la longitud del correo o telefono.";
 
         if (!Validacion.TelefonoValido(telefono))
             return "El teléfono debe tener al menos 8 dígitos y solo números, espacios, +, - o paréntesis.";
+
+        if (!Validacion.EmailValido(email))
+            return Validacion.MensajeEmail;
 
         if (roles is null ||
             roles.Count == 0 ||

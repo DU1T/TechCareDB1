@@ -35,6 +35,12 @@ public sealed class PagosController : ControllerBase
             });
         }
 
+        if (!Validacion.DosDecimales(dto.Monto.Value))
+            return BadRequest(new { error = "El monto admite máximo 2 decimales." });
+
+        if (!Validacion.ReferenciaValida(dto.Referencia))
+            return BadRequest(new { error = "La referencia solo admite letras, números, espacios y . _ - /." });
+
         var resultado = await _repo.RegistrarPagoAsync(
             id,
             dto.IdMetodoPago.Value,
