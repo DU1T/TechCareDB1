@@ -22,13 +22,19 @@ type Orden = {
 }
 
 const api = useApi()
+const route = useRoute()
 const estados = [
   { label: 'Todos los estados activos', value: 'TODOS' },
   ...Object.entries(ESTADO_ORDEN)
     .filter(([codigo]) => !['ENTREGADO', 'CANCELADO'].includes(codigo))
     .map(([value, e]) => ({ label: e.texto, value })),
 ]
-const filtro = reactive({ estado: 'TODOS', texto: '' })
+// Desde el Inicio se llega con ?estado=LISTO (por ejemplo): solo vale si es un estado activo conocido
+const estadoInicial = String(route.query.estado ?? '')
+const filtro = reactive({
+  estado: estados.some((e) => e.value === estadoInicial) ? estadoInicial : 'TODOS',
+  texto: '',
+})
 
 const ordenes = ref<Orden[]>([])
 const cargando = ref(true)
