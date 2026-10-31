@@ -209,6 +209,9 @@ public sealed class ClientesEquiposController : ControllerBase
             nombre is null || nombre.Length > 150)
             return "Revise el tipo de cliente, NIT y nombre.";
 
+        if (!Validacion.NitValido(nit))
+            return "El NIT debe ser CF o números con su dígito verificador (por ejemplo 1234567-8 o 123456-K).";
+
         if (tipo == "EMPRESA" &&
             nit.Equals("CF", StringComparison.OrdinalIgnoreCase))
             return "Una empresa debe tener NIT distinto de CF.";
@@ -220,6 +223,9 @@ public sealed class ClientesEquiposController : ControllerBase
             (email?.Length ?? 0) > 120 ||
             (Limpiar(dto.Direccion)?.Length ?? 0) > 250)
             return "Los datos de contacto superan la longitud permitida.";
+
+        if (!Validacion.TelefonoValido(telefono))
+            return "El teléfono debe tener al menos 8 dígitos y solo números, espacios, +, - o paréntesis.";
 
         var estado = Limpiar(dto.Estado)?.ToUpperInvariant();
 

@@ -73,12 +73,13 @@ public sealed class InventarioController : ControllerBase
         if (dto.IdBodega <= 0 ||
             dto.IdRepuesto <= 0 ||
             dto.Cantidad == 0 ||
+            Math.Abs((long)dto.Cantidad) > Validacion.CantidadMaxima ||
             string.IsNullOrWhiteSpace(dto.Motivo) ||
             dto.Motivo.Length > 250)
         {
             return BadRequest(new
             {
-                error = "Indique bodega, repuesto, una cantidad distinta de cero y el motivo (máximo 250 caracteres)."
+                error = "Indique bodega, repuesto, una cantidad distinta de cero (hasta 10,000) y el motivo (máximo 250 caracteres)."
             });
         }
 

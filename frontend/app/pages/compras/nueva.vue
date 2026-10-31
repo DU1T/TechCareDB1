@@ -75,8 +75,8 @@ const problema = computed(() => {
   if (compra.observaciones.length > 300) return 'Las observaciones admiten 300 caracteres.'
   if (lineas.value.length === 0) return 'Agrega al menos una línea.'
   if (lineas.value.some((l) => !l.idRepuesto)) return 'Cada línea necesita un repuesto.'
-  if (lineas.value.some((l) => !(l.cantidad > 0))) return 'Cada cantidad debe ser mayor que cero.'
-  if (lineas.value.some((l) => l.costoUnitario == null || l.costoUnitario < 0)) return 'El costo no puede ser negativo.'
+  if (lineas.value.some((l) => !(l.cantidad > 0) || l.cantidad > LIMITE.cantidadMax)) return 'Cada cantidad va de 1 a 10,000.'
+  if (lineas.value.some((l) => l.costoUnitario == null || l.costoUnitario < 0 || l.costoUnitario > LIMITE.montoMax)) return 'Cada costo unitario va de Q 0 a Q 1,000,000.'
   return ''
 })
 
@@ -132,7 +132,7 @@ async function guardar() {
         <UFormField label="Número de documento" required hint="Factura del proveedor">
           <UInput v-model="compra.numeroDocumento" maxlength="30" class="w-full" />
         </UFormField>
-        <UFormField label="Observaciones" class="sm:col-span-3">
+        <UFormField label="Observaciones" class="sm:col-span-3" :hint="contador(compra.observaciones, 300)">
           <UTextarea v-model="compra.observaciones" :rows="2" maxlength="300" class="w-full" />
         </UFormField>
       </div>
@@ -162,12 +162,13 @@ async function guardar() {
             />
           </UFormField>
           <UFormField label="Cantidad">
-            <UInputNumber v-model="l.cantidad" :min="1" class="w-full" />
+            <UInputNumber v-model="l.cantidad" :min="1" :max="LIMITE.cantidadMax" class="w-full" />
           </UFormField>
           <UFormField label="Costo unitario">
             <UInputNumber
               v-model="l.costoUnitario"
               :min="0"
+              :max="LIMITE.montoMax"
               :step="0.01"
               :format-options="{ minimumFractionDigits: 2, maximumFractionDigits: 2 }"
               class="w-full"

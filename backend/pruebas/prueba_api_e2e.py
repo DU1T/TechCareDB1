@@ -82,7 +82,7 @@ chk('los 5 roles inician sesión', all(T.values()), {k: bool(v) for k, v in T.it
 chk('clave incorrecta -> 401', req('POST', '/auth/login', None, {'username': 'recepcion1', 'password': 'mala'})[0] == 401)
 chk('sin token -> 401', req('GET', '/ordenes')[0] == 401)
 chk('token falso -> 401', req('GET', '/ordenes', 'abc.def.ghi')[0] == 401)
-chk('bodega no crea clientes -> 403', req('POST', '/clientes', T['bodega1'], {'tipoCliente': 'INDIVIDUAL', 'nit': 'CF', 'nombre': 'x', 'telefono': '1'})[0] == 403)
+chk('bodega no crea clientes -> 403', req('POST', '/clientes', T['bodega1'], {'tipoCliente': 'INDIVIDUAL', 'nit': 'CF', 'nombre': 'x', 'telefono': '22334455'})[0] == 403)
 chk('caja no crea órdenes -> 403', req('POST', '/ordenes', T['caja1'], {'idEquipo': 1, 'problemaReportado': 'x', 'prioridad': 'BAJA'})[0] == 403)
 chk('recepción no ve usuarios -> 403', req('GET', '/usuarios', T['recepcion1'])[0] == 403)
 chk('técnico no factura -> 403', req('POST', '/ordenes/1/factura', T['tecnico1'], {})[0] == 403)
@@ -92,13 +92,13 @@ seccion('2. Clientes y equipos (T01)')
 s, tipos = req('GET', '/tipos-equipo', T['recepcion1'])
 s2, marcas = req('GET', '/marcas', T['recepcion1'])
 chk('catálogos de tipos y marcas', s == 200 and s2 == 200 and len(tipos) >= 8 and len(marcas) >= 13, (s, s2))
-nit = f'E2E{SUFIJO}-1'
+nit = f'9{SUFIJO}-1'   # formato de NIT válido: dígitos, guion y dígito verificador
 s, cli = req('POST', '/clientes', T['recepcion1'], {'tipoCliente': 'EMPRESA', 'nit': nit, 'nombre': f'Cliente E2E {SUFIJO} Ñandú', 'telefono': '22334455', 'email': 'e2e@prueba.test', 'direccion': 'Zona 4'})
 idc = buscar(cli, 'idCliente')
 chk('crear cliente empresa', s == 200 and idc, (s, cli))
-sd, dd = req('POST', '/clientes', T['recepcion1'], {'tipoCliente': 'EMPRESA', 'nit': nit, 'nombre': 'otro', 'telefono': '1'})
+sd, dd = req('POST', '/clientes', T['recepcion1'], {'tipoCliente': 'EMPRESA', 'nit': nit, 'nombre': 'otro', 'telefono': '22334455'})
 chk('NIT repetido -> 409 con mensaje claro', sd == 409 and 'NIT' in str(dd), (sd, dd))
-chk('empresa con NIT CF -> 400', req('POST', '/clientes', T['recepcion1'], {'tipoCliente': 'EMPRESA', 'nit': 'CF', 'nombre': 'otro', 'telefono': '1'})[0] == 400)
+chk('empresa con NIT CF -> 400', req('POST', '/clientes', T['recepcion1'], {'tipoCliente': 'EMPRESA', 'nit': 'CF', 'nombre': 'otro', 'telefono': '22334455'})[0] == 400)
 chk('cliente sin contacto -> 400', req('POST', '/clientes', T['recepcion1'], {'tipoCliente': 'INDIVIDUAL', 'nit': 'CF', 'nombre': 'sin contacto'})[0] == 400)
 equipos = []
 for i, (t, m) in enumerate([(1, 1), (3, 2)]):
@@ -183,7 +183,7 @@ pventa = [x for x in catalogo if x['idRepuesto'] == r1['idRepuesto']][0]['precio
 esperado = round((200 + 2 * float(pventa)) * 1.12, 2)   # (mano de obra + 2 repuestos al precio del momento) + 12 % de IVA
 chk('total = (mano de obra + repuestos) + 12 % de IVA', abs(esperado - total) < 0.02, (esperado, total))
 chk('segunda factura de la misma orden -> 409', req('POST', f'/ordenes/{ido}/factura', T['caja1'], {'nitFacturacion': 'CF', 'nombreFacturacion': 'x'})[0] == 409)
-chk('entrega con saldo pendiente rechazada (409)', req('POST', f'/ordenes/{ido}/entrega', T['caja1'], {'nombreRecibe': 'Juan', 'documentoRecibe': '123'})[0] == 409)
+chk('entrega con saldo pendiente rechazada (409)', req('POST', f'/ordenes/{ido}/entrega', T['caja1'], {'nombreRecibe': 'Juan', 'documentoRecibe': '2345 67890 0102'})[0] == 409)
 mitad = round(total / 2, 2)
 s, p1 = req('POST', f'/facturas/{idf}/pagos', T['caja1'], {'idMetodoPago': 1, 'monto': mitad})
 chk('primer pago parcial', s == 200, (s, p1))
@@ -206,7 +206,7 @@ s, e = req('POST', f'/ordenes/{ido}/entrega', T['caja1'], {'nombreRecibe': 'Juan
 chk('entrega con saldo 0', s == 200, (s, e))
 s, d = req('GET', f'/ordenes/{ido}', T['recepcion1'])
 chk('la orden quedó ENTREGADO', buscar(d, 'estado') == 'ENTREGADO', buscar(d, 'estado'))
-chk('segunda entrega rechazada (409)', req('POST', f'/ordenes/{ido}/entrega', T['caja1'], {'nombreRecibe': 'x', 'documentoRecibe': '1'})[0] == 409)
+chk('segunda entrega rechazada (409)', req('POST', f'/ordenes/{ido}/entrega', T['caja1'], {'nombreRecibe': 'x', 'documentoRecibe': '2345 67890 0103'})[0] == 409)
 
 # ---------------------------------------------------------------- 7. orden rechazada por el cliente
 seccion('7. Orden que el cliente no autoriza')
@@ -289,7 +289,7 @@ chk('precio negativo -> 400', req('POST', '/repuestos', T['bodega1'], {'codigo':
 chk('recepción no gestiona catálogos -> 403', req('POST', '/categorias', T['recepcion1'], {'nombre': 'nope'})[0] == 403)
 chk('crear categoría, tipo de equipo, marca, proveedor y bodega', all(req('POST', ruta, T['bodega1'], cuerpo)[0] == 200 for ruta, cuerpo in [
     ('/categorias', {'nombre': f'Cat E2E {SUFIJO}'}), ('/tipos-equipo', {'nombre': f'Tipo E2E {SUFIJO}'}), ('/marcas', {'nombre': f'Marca E2E {SUFIJO}'}),
-    ('/proveedores', {'nit': f'P{SUFIJO}', 'nombre': f'Proveedor E2E {SUFIJO}'}), ('/bodegas', {'codigo': f'B{SUFIJO}'[:10], 'nombre': f'Bodega E2E {SUFIJO}'})]))
+    ('/proveedores', {'nit': f'8{SUFIJO}-K', 'nombre': f'Proveedor E2E {SUFIJO}'}), ('/bodegas', {'codigo': f'B{SUFIJO}'[:10], 'nombre': f'Bodega E2E {SUFIJO}'})]))
 s, d = req('PUT', f'/repuestos/{idrp}', T['bodega1'], {'codigo': f'E2E-{SUFIJO}', 'nombre': 'Repuesto E2E', 'descripcion': 'prueba', 'idCategoria': cat[0]['idCategoria'], 'precioCompraRef': 100.5, 'precioVenta': 175, 'estado': 'ACTIVO'})
 chk('cambiar el precio de venta', s == 200, (s, d))
 # el precio histórico de la orden ya facturada no cambió: se revisa que el detalle de la orden entregada sigue igual
@@ -319,6 +319,28 @@ chk('reporte 12 trae la trazabilidad de la orden entregada con factura y pagos',
 s, d = req('GET', f'/reportes/3?numeroSerie=E2E-{SUFIJO}-0', T['administrador1'])
 chk('reporte 3 (historial por serie) muestra la orden', s == 200 and json.dumps(d).count('OS-') >= 1)
 chk('los técnicos pueden ver reportes, la caja también (REPORTE_VER)', req('GET', '/reportes/1', T['tecnico1'])[0] == 200 and req('GET', '/reportes/1', T['caja1'])[0] == 200)
+
+# ---------------------------------------------------------------- validaciones de entrada (largos, formatos y topes)
+seccion('Validaciones de entrada')
+A_ = T['administrador1']
+chk('login con contraseña de 200 caracteres -> 401 sin consultar', req('POST', '/auth/login', None, {'username': 'administrador1', 'password': 'x' * 200})[0] == 401)
+chk('login con usuario de 60 caracteres -> 401', req('POST', '/auth/login', None, {'username': 'u' * 60, 'password': 'Demo2026!'})[0] == 401)
+chk('usuario con espacios -> 400', req('POST', '/usuarios', A_, {'username': 'juan perez', 'password': 'Clave2026!', 'nombreCompleto': 'x', 'idRoles': [rid['CAJA']]})[0] == 400)
+chk('usuario de 2 caracteres -> 400', req('POST', '/usuarios', A_, {'username': 'ab', 'password': 'Clave2026!', 'nombreCompleto': 'x', 'idRoles': [rid['CAJA']]})[0] == 400)
+chk('contraseña sin números -> 400', req('POST', '/usuarios', A_, {'username': uname + 'd', 'password': 'solamenteletras', 'nombreCompleto': 'x', 'idRoles': [rid['CAJA']]})[0] == 400)
+chk('contraseña de 129 caracteres -> 400', req('POST', '/usuarios', A_, {'username': uname + 'e', 'password': 'a1' * 64 + 'b', 'nombreCompleto': 'x', 'idRoles': [rid['CAJA']]})[0] == 400)
+chk('teléfono de usuario con letras -> 400', req('POST', '/usuarios', A_, {'username': uname + 'f', 'password': 'Clave2026!', 'nombreCompleto': 'x', 'telefono': 'abc12345', 'idRoles': [rid['CAJA']]})[0] == 400)
+chk('NIT de cliente con letras -> 400', req('POST', '/clientes', T['recepcion1'], {'tipoCliente': 'INDIVIDUAL', 'nit': 'ABC', 'nombre': 'x', 'telefono': '22334455'})[0] == 400)
+chk('teléfono de cliente con menos de 8 dígitos -> 400', req('POST', '/clientes', T['recepcion1'], {'tipoCliente': 'INDIVIDUAL', 'nit': 'CF', 'nombre': 'x', 'telefono': '1234'})[0] == 400)
+s, d = req('POST', '/clientes', T['recepcion1'], {'tipoCliente': 'INDIVIDUAL', 'nit': f'7{SUFIJO}-k', 'nombre': f'Cliente K {SUFIJO}', 'telefono': '+502 2233-4455'})
+chk('NIT con dígito verificador K y teléfono con +502 se aceptan', s == 200, (s, d))
+chk('NIT de proveedor inválido -> 400', req('POST', '/proveedores', T['bodega1'], {'nit': 'P-123-X', 'nombre': 'x'})[0] == 400)
+chk('NIT de facturación inválido -> 400', req('POST', f'/ordenes/{ido2}/factura', T['caja1'], {'nitFacturacion': 'NIT??'})[0] == 400)
+chk('DPI de 3 dígitos -> 400', req('POST', f'/ordenes/{ido2}/entrega', T['caja1'], {'nombreRecibe': 'x', 'documentoRecibe': '123'})[0] == 400)
+chk('mano de obra de Q 2,000,000 -> 400 (no llega a desbordar la base)', req('POST', f'/ordenes/{ido2}/diagnostico', T['tecnico1'], {'descripcion': 'x', 'costoManoObraEstimado': 2000000})[0] == 400)
+chk('compra con cantidad 10,001 -> 400', req('POST', '/compras', T['bodega1'], {'idProveedor': prov[0]['idProveedor'], 'idBodegaDestino': bodega, 'numeroDocumento': doc + 'Q', 'lineas': [{'idRepuesto': ra['idRepuesto'], 'cantidad': 10001, 'costoUnitario': 1}]})[0] == 400)
+chk('compra con costo de Q 99,999,999 -> 400', req('POST', '/compras', T['bodega1'], {'idProveedor': prov[0]['idProveedor'], 'idBodegaDestino': bodega, 'numeroDocumento': doc + 'R', 'lineas': [{'idRepuesto': ra['idRepuesto'], 'cantidad': 1, 'costoUnitario': 99999999}]})[0] == 400)
+chk('ajuste de 20,000 unidades -> 400', req('POST', '/inventario/ajuste', T['bodega1'], {'idBodega': bodega, 'idRepuesto': ra['idRepuesto'], 'cantidad': 20000, 'motivo': 'prueba'})[0] == 400)
 
 print(f'\nRESULTADO: {ok} OK, {fallas} FALLA')
 sys.exit(1 if fallas else 0)

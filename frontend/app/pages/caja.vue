@@ -72,7 +72,7 @@ function pedirPago(f: FacturaSaldo) {
   <div class="mx-auto max-w-7xl space-y-5">
     <div class="flex flex-wrap items-end gap-3">
       <UFormField label="Buscar" class="w-full sm:w-72">
-        <UInput v-model="texto" icon="i-lucide-search" placeholder="Factura, orden, cliente o NIT" class="w-full" />
+        <UInput v-model="texto" icon="i-lucide-search" placeholder="Factura, orden, cliente o NIT" :maxlength="LIMITE.busqueda" class="w-full" />
       </UFormField>
       <p v-if="!cargando && !fallo" class="text-sm text-bruma-600 sm:ml-auto">
         {{ visibles.length }} {{ visibles.length === 1 ? 'factura' : 'facturas' }} con saldo ·

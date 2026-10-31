@@ -54,11 +54,11 @@ public sealed class ReparacionesController : ControllerBase
         if (id <= 0 ||
             string.IsNullOrWhiteSpace(dto.DescripcionTrabajo) ||
             dto.DescripcionTrabajo.Length > 1000 ||
-            dto.CostoManoObra < 0)
+            !Validacion.MontoValido(dto.CostoManoObra))
         {
             return BadRequest(new
             {
-                error = "Revise la descripcion y el costo de mano de obra."
+                error = "Revise la descripcion y el costo de mano de obra (de Q 0 a Q 1,000,000)."
             });
         }
 

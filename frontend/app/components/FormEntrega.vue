@@ -23,7 +23,7 @@ watch(abierto, (v) => {
 
 const errores = computed(() => ({
   nombre: !form.nombre.trim() ? 'Escribe quién recibe el equipo.' : form.nombre.length > 120 ? 'Máximo 120 caracteres.' : '',
-  documento: form.documento.length > 20 ? 'Máximo 20 caracteres.' : '',
+  documento: form.documento.length > 20 ? 'Máximo 20 caracteres.' : !dpiValido(form.documento) ? MENSAJE.dpi : '',
   observaciones: form.observaciones.length > 300 ? 'Máximo 300 caracteres.' : '',
 }))
 const hayError = computed(() => Object.values(errores.value).some(Boolean))
@@ -60,13 +60,13 @@ async function entregar() {
           Al entregar, <strong class="text-highlighted">{{ orden.numeroOrden }}</strong> queda cerrada y ya no se puede modificar.
         </p>
         <UFormField label="Quién recibe" required :error="intento ? errores.nombre : undefined">
-          <UInput v-model="form.nombre" class="w-full" />
+          <UInput v-model="form.nombre" maxlength="120" class="w-full" />
         </UFormField>
-        <UFormField label="Documento de quien recibe" :error="errores.documento || undefined" hint="Opcional">
-          <UInput v-model="form.documento" placeholder="DPI" class="w-full" />
+        <UFormField label="Documento de quien recibe" :error="intento && errores.documento ? errores.documento : undefined" hint="Opcional · DPI de 13 dígitos">
+          <UInput v-model="form.documento" placeholder="1234 56789 0101" maxlength="20" inputmode="numeric" class="w-full" />
         </UFormField>
-        <UFormField label="Observaciones" :error="errores.observaciones || undefined" hint="Opcional">
-          <UTextarea v-model="form.observaciones" :rows="2" class="w-full" />
+        <UFormField label="Observaciones" :error="errores.observaciones || undefined" :hint="`Opcional · ${contador(form.observaciones, 300)}`">
+          <UTextarea v-model="form.observaciones" :rows="2" maxlength="300" class="w-full" />
         </UFormField>
         <button type="submit" class="hidden" tabindex="-1" aria-hidden="true" />
       </form>

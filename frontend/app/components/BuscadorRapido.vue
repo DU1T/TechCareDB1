@@ -14,6 +14,10 @@ const abierto = defineModel<boolean>('open', { default: false })
 const auth = useAuthStore()
 const api = useApi()
 const termino = ref('')
+// La paleta no expone maxlength: se recorta aquí al mismo límite que los demás buscadores
+watch(termino, (t) => {
+  if (t.length > LIMITE.busqueda) termino.value = t.slice(0, LIMITE.busqueda)
+})
 
 defineShortcuts({ meta_k: () => { abierto.value = !abierto.value } })
 

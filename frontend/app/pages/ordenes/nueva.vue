@@ -172,7 +172,7 @@ async function crear() {
       <div v-else key="buscar" class="space-y-3">
         <div class="flex flex-wrap items-end gap-3">
           <UFormField label="Buscar cliente" class="w-full sm:w-80">
-            <UInput v-model="buscar" icon="i-lucide-search" placeholder="Nombre o NIT" class="w-full" />
+            <UInput v-model="buscar" icon="i-lucide-search" placeholder="Nombre o NIT" :maxlength="LIMITE.busqueda" class="w-full" />
           </UFormField>
           <UButton v-if="auth.puede('CLIENTE_GESTIONAR')" color="neutral" variant="outline" icon="i-lucide-plus" @click="modalCliente = true">Cliente nuevo</UButton>
         </div>
@@ -210,7 +210,7 @@ async function crear() {
       </div>
       <p v-if="!equiposActivos.length" class="text-sm text-bruma-500">Este cliente no tiene equipos activos. Registra uno con «Equipo nuevo».</p>
 
-      <UFormField label="Problema reportado" required :error="intento ? errores.problema : undefined">
+      <UFormField label="Problema reportado" required :error="intento ? errores.problema : undefined" :hint="contador(form.problemaReportado, 500)">
         <UTextarea v-model="form.problemaReportado" :rows="3" maxlength="500" class="w-full" />
       </UFormField>
 
@@ -223,7 +223,7 @@ async function crear() {
         </UFormField>
       </div>
 
-      <UFormField label="Observaciones" :error="intento ? errores.observaciones : undefined" hint="Estado físico, accesorios que deja, etc.">
+      <UFormField label="Observaciones" :error="intento ? errores.observaciones : undefined" :hint="`Estado físico, accesorios que deja, etc. · ${contador(form.observaciones, 500)}`">
         <UTextarea v-model="form.observaciones" :rows="2" maxlength="500" class="w-full" />
       </UFormField>
 

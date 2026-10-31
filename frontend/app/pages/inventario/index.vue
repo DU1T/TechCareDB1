@@ -122,7 +122,7 @@ const quedaria = computed(() => {
   return ajuste.fila.existencia + (ajuste.tipo === 'ENTRADA' ? c : -c)
 })
 const ajusteValido = computed(
-  () => ajuste.cantidad > 0 && quedaria.value >= 0 && ajuste.motivo.trim().length > 0 && ajuste.motivo.length <= 250,
+  () => ajuste.cantidad > 0 && ajuste.cantidad <= LIMITE.cantidadMax && quedaria.value >= 0 && ajuste.motivo.trim().length > 0 && ajuste.motivo.length <= 250,
 )
 
 async function guardarAjuste() {
@@ -157,7 +157,7 @@ async function guardarAjuste() {
   <div class="mx-auto max-w-7xl space-y-5">
     <div class="flex flex-wrap items-end gap-3">
       <UFormField label="Buscar" class="w-full sm:w-64">
-        <UInput v-model="filtro.texto" icon="i-lucide-search" placeholder="Código o nombre" class="w-full" />
+        <UInput v-model="filtro.texto" icon="i-lucide-search" placeholder="Código o nombre" :maxlength="LIMITE.busqueda" class="w-full" />
       </UFormField>
       <UFormField label="Bodega" class="w-full sm:w-52">
         <USelect v-model="filtro.idBodega" :items="bodegas" class="w-full" />
@@ -247,10 +247,10 @@ async function guardarAjuste() {
             <URadioGroup v-model="ajuste.tipo" :items="tiposAjuste" orientation="horizontal" />
           </UFormField>
           <UFormField label="Cantidad">
-            <UInputNumber v-model="ajuste.cantidad" :min="1" class="w-40" />
+            <UInputNumber v-model="ajuste.cantidad" :min="1" :max="LIMITE.cantidadMax" class="w-40" />
           </UFormField>
-          <UFormField label="Motivo" hint="Queda en el kárdex" :error="ajuste.motivo.length > 250 ? 'Máximo 250 caracteres' : undefined">
-            <UTextarea v-model="ajuste.motivo" :rows="2" class="w-full" placeholder="Conteo físico, producto dañado..." />
+          <UFormField label="Motivo" :hint="`Queda en el kárdex · ${contador(ajuste.motivo, 250)}`" :error="ajuste.motivo.length > 250 ? 'Máximo 250 caracteres' : undefined">
+            <UTextarea v-model="ajuste.motivo" :rows="2" maxlength="250" class="w-full" placeholder="Conteo físico, producto dañado..." />
           </UFormField>
           <p class="text-sm" :class="quedaria < 0 ? 'text-red-700' : 'text-bruma-600'" aria-live="polite">
             Quedará en <strong class="cifras">{{ quedaria }}</strong>
