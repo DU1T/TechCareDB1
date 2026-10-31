@@ -60,6 +60,10 @@ const visibles = computed(() => {
   )
 })
 
+// Al filtrar o buscar, las filas se deslizan a su lugar nuevo y las que entran aparecen (composables/useReacomodo.ts)
+const tabla = ref<HTMLElement | null>(null)
+useReacomodo(tabla, () => visibles.value)
+
 // ---- Ir a la trazabilidad de una orden por su número
 const numeroBuscado = ref('')
 const errorNumero = ref('')
@@ -103,7 +107,7 @@ const columnas: TableColumn<Orden>[] = [
       </UFormField>
     </div>
 
-    <div class="overflow-hidden rounded-lg border border-bruma-200 bg-white">
+    <div ref="tabla" class="overflow-hidden rounded-lg border border-bruma-200 bg-white">
       <UTable
         :data="visibles"
         :columns="columnas"

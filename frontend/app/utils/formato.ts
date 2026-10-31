@@ -10,6 +10,16 @@ export const numero = (n: number | null | undefined) => (n == null ? '—' : ent
 export const fecha = (iso: string | null | undefined) => (iso ? fechaCorta.format(new Date(iso)) : '—')
 export const fechaYHora = (iso: string | null | undefined) => (iso ? fechaHora.format(new Date(iso)) : '—')
 
+// Tiempo entre dos momentos, en palabras cortas: "45 min", "2 h", "1 h 30 min", "3 días"
+export function duracion(ms: number) {
+  const min = Math.max(0, Math.round(ms / 60000))
+  if (min < 60) return `${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 48) return min % 60 ? `${h} h ${min % 60} min` : `${h} h`
+  const d = Math.round(h / 24)
+  return `${d} días`
+}
+
 // Estados de stock de vw_InventarioActual: texto y color del distintivo
 export const ESTADO_STOCK: Record<string, { texto: string; color: 'success' | 'warning' | 'error' }> = {
   OK: { texto: 'Disponible', color: 'success' },

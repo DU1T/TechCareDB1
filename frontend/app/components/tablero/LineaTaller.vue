@@ -16,15 +16,20 @@ export type ResumenTaller = {
 }
 const props = defineProps<{ datos: ResumenTaller }>()
 
-const TRAMOS: { clave: keyof ResumenTaller; estado: string; color: string }[] = [
-  { clave: 'recibidas', estado: 'RECIBIDO', color: 'bg-placa-200' },
-  { clave: 'enDiagnostico', estado: 'DIAGNOSTICO', color: 'bg-placa-300' },
-  { clave: 'esperandoAutorizacion', estado: 'ESPERANDO_AUTORIZACION', color: 'bg-acento-400' },
-  { clave: 'enReparacion', estado: 'REPARACION', color: 'bg-placa-500' },
-  { clave: 'listasParaEntregar', estado: 'LISTO', color: 'bg-placa-700' },
+const TRAMOS: { clave: keyof ResumenTaller; estado: string }[] = [
+  { clave: 'recibidas', estado: 'RECIBIDO' },
+  { clave: 'enDiagnostico', estado: 'DIAGNOSTICO' },
+  { clave: 'esperandoAutorizacion', estado: 'ESPERANDO_AUTORIZACION' },
+  { clave: 'enReparacion', estado: 'REPARACION' },
+  { clave: 'listasParaEntregar', estado: 'LISTO' },
 ]
 const tramos = computed(() =>
-  TRAMOS.map((t) => ({ ...t, n: props.datos[t.clave], texto: ESTADO_ORDEN[t.estado]?.texto ?? t.estado })),
+  TRAMOS.map((t) => ({
+    ...t,
+    n: props.datos[t.clave],
+    texto: ESTADO_ORDEN[t.estado]?.texto ?? t.estado,
+    color: COLOR_ESTADO_ORDEN[t.estado] ?? 'bg-bruma-300',
+  })),
 )
 
 const activo = ref<string | null>(null)
