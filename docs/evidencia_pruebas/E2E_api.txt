@@ -1,0 +1,136 @@
+Evidencia E2E por la API (vie 30 oct 2026). Base de prueba construida desde master 0a5b49b + commit 9b8aac8 (rama c/core-correcciones); API conectada con un login temporal en rol_app (mínimo privilegio).
+Comando: backend/pruebas/prueba_api_e2e.py (ver docs/PLAN_PRUEBAS.md, sección 4).
+
+
+== 1. Seguridad y roles
+  OK     los 5 roles inician sesión
+  OK     clave incorrecta -> 401
+  OK     sin token -> 401
+  OK     token falso -> 401
+  OK     bodega no crea clientes -> 403
+  OK     caja no crea órdenes -> 403
+  OK     recepción no ve usuarios -> 403
+  OK     técnico no factura -> 403
+
+== 2. Clientes y equipos (T01)
+  OK     catálogos de tipos y marcas
+  OK     crear cliente empresa
+  OK     NIT repetido -> 409 con mensaje claro
+  OK     empresa con NIT CF -> 400
+  OK     cliente sin contacto -> 400
+  OK     crear 2 equipos
+  OK     serie repetida -> 409 con mensaje claro
+  OK     el cliente tiene sus 2 equipos
+  OK     búsqueda de clientes por nombre
+  OK     editar cliente
+
+== 3. Orden de servicio (T02)
+  OK     crear orden
+  OK     estado inicial RECIBIDO, prioridad ALTA
+  OK     orden con prioridad inválida -> 400/409
+  OK     orden con equipo inexistente -> 4xx
+
+== 4. Diagnóstico, autorización y reparación (T03)
+  OK     recepción no diagnostica -> 403
+  OK     no se repara sin diagnóstico (R06)
+  OK     diagnóstico -> ESPERANDO_AUTORIZACION
+  OK     costo de mano de obra negativo -> 4xx
+  OK     cliente autoriza
+  OK     iniciar reparación
+
+== 5. Repuestos: sin stock y con stock (T04, T05)
+  OK     el inventario tiene filas con y sin stock
+  OK     repuesto sin stock rechazado (409)
+  OK     cantidad mayor que la existencia rechazada (409)
+  OK     cantidad 0 rechazada
+  OK     repuesto inexistente rechazado
+  OK     los rechazos no dejaron cambios en el inventario
+  OK     bodega no usa repuestos en reparación -> 403
+  OK     usar 2 unidades con stock
+  OK     la existencia bajó exactamente 2
+  OK     el kárdex registra la SALIDA por reparación con la existencia resultante
+  OK     registrar actividad
+  OK     horas > 24 rechazadas
+  OK     finalizar reparación
+  OK     ya finalizada: no admite más repuestos
+  OK     la orden quedó LISTO
+
+== 6. Factura, pagos y entrega (T08, T09, T10)
+  OK     técnico no factura -> 403
+  OK     emitir factura
+  OK     total = (mano de obra + repuestos) + 12 % de IVA
+  OK     segunda factura de la misma orden -> 409
+  OK     entrega con saldo pendiente rechazada (409)
+  OK     primer pago parcial
+  OK     segundo pago parcial
+  OK     el saldo es el esperado
+  OK     pago que excede el saldo rechazado (409)
+  OK     pago de 0 rechazado
+  OK     recepción no registra pagos -> 403
+  OK     los rechazos no cambiaron el saldo
+  OK     pago final deja saldo en 0
+  OK     factura pagada no admite más pagos (409)
+  OK     entrega con saldo 0
+  OK     la orden quedó ENTREGADO
+  OK     segunda entrega rechazada (409)
+
+== 7. Orden que el cliente no autoriza
+  OK     el cliente rechaza: orden a LISTO sin reparación
+  OK     estado tras rechazo
+
+== 8. Compras y recepción (T06)
+  OK     registrar compra con 2 líneas (PENDIENTE)
+  OK     registrar no mueve el inventario
+  OK     documento repetido -> 409
+  OK     compra sin líneas rechazada
+  OK     caja no recibe compras -> 403
+  OK     recibir la compra
+  OK     inventario subió +5 y +3
+  OK     el kárdex tiene la ENTRADA por compra
+  OK     recibir dos veces -> 409
+  OK     un ajuste no puede dejar existencia negativa
+
+== 9. Usuarios y roles
+  OK     crear usuario
+  OK     el usuario nuevo entra con su clave
+  OK     username repetido -> 409 con mensaje claro
+  OK     clave corta -> 400
+  OK     sin roles -> 400
+  OK     editar roles y clave
+  OK     la clave vieja ya no sirve y la nueva sí
+  OK     desactivar: ya no puede entrar
+  OK     desactivar: su sesión abierta (token) deja de valer (se espera 401)
+  OK     un administrador no puede desactivarse a sí mismo (400)
+  OK     un administrador no puede quitarse su propio rol ADMINISTRADOR (se espera 400)
+
+== 10. Catálogos y auditoría de precios (T14)
+  OK     crear repuesto
+  OK     código repetido -> 409 con mensaje claro
+  OK     categoría inexistente -> 409 con mensaje claro
+  OK     precio con 3 decimales -> 400
+  OK     precio negativo -> 400
+  OK     recepción no gestiona catálogos -> 403
+  OK     crear categoría, tipo de equipo, marca, proveedor y bodega
+  OK     cambiar el precio de venta
+  OK     el total de la factura ya emitida no cambia con los precios del catálogo
+
+== 11. Dashboard y los 12 reportes
+  OK     dashboard con sus 9 indicadores
+  OK     órdenes abiertas del dashboard = órdenes no cerradas de la lista
+  OK     reporte 1 responde con datos
+  OK     reporte 2 responde con datos
+  OK     reporte 3 responde con datos
+  OK     reporte 4 responde con datos
+  OK     reporte 5 responde con datos
+  OK     reporte 6 responde con datos
+  OK     reporte 7 responde con datos
+  OK     reporte 8 responde con datos
+  OK     reporte 9 responde con datos
+  OK     reporte 10 responde con datos
+  OK     reporte 11 responde con datos
+  OK     reporte 12 responde con datos
+  OK     reporte 12 trae la trazabilidad de la orden entregada con factura y pagos
+  OK     reporte 3 (historial por serie) muestra la orden
+  OK     los técnicos pueden ver reportes, la caja también (REPORTE_VER)
+
+RESULTADO: 109 OK, 0 FALLA

@@ -7,13 +7,13 @@ Entregable 08: casos funcionales (T01–T14 del enunciado) y de integridad (R14,
 | | |
 | --- | --- |
 | Fecha | viernes 30 de octubre de 2026 |
-| Versión | `master` `04b78c5` (incluye el trigger `trg_Pago_NoExcedeTotal`, PR #38) |
+| Versión | Scripts SQL y T01–T03: `master` `04b78c5` (incluye el trigger `trg_Pago_NoExcedeTotal`, PR #38); regresión de los 10 scripts SQL el mismo día sobre `master` `4473f17` (119 OK, 0 FALLA). Prueba de punta a punta y reportes §5.1: `master` `0a5b49b` + commit `9b8aac8` (correcciones del API) |
 | Base | `TechCare_Pruebas` construida desde cero (script maestro + datos de prueba + `92`, los mismos pasos de `reconstruir.ps1`) en SQL Server 2022 (Docker), más `90_seguridad.sql` (usuario `techcare_app` en `rol_app`) |
 | API | ASP.NET Core 8 conectada como `techcare_app` (mínimo privilegio), igual que en producción |
 | Scripts | `database/pruebas/*.sql`, ejecutados con `sqlcmd` como `sa`; T01–T03 por la API con usuarios de cada rol |
 | Evidencia | `docs/evidencia_pruebas/<prueba>.txt`: salida completa, sin editar |
 
-**Resultado global: 119 verificaciones en OK, 0 FALLA** (20 de integridad directa, 13 de R14, 15 de T04–T05, 14 de T06, 10 de T07, 18 de T08–T10, 4 de T12, 11 de T13, 13 de T14, T01–T03 y T11).
+**Resultado global: 119 verificaciones SQL en OK, 0 FALLA** (20 de integridad directa, 13 de R14, 15 de T04–T05, 14 de T06, 10 de T07, 18 de T08–T10, 4 de T12, 11 de T13, 13 de T14, T01–T03 y T11), **más 109 verificaciones de punta a punta por la API en OK, 0 FALLA** (sección 4) y el cumplimiento de la sección 5.1 del enunciado sobre los 12 reportes (sección 4.2).
 
 Para repetirlas en una base personal: construir la base (`database/reconstruir.ps1`), abrir cada script de `database/pruebas/` y ejecutarlo; cada uno imprime `OK` o `FALLA` por verificación. T04–T07, T13, T14, R14 y R16 terminan en `ROLLBACK` (no dejan cambios); **T08–T10 confirma cambios** y se niega a correr en la base compartida `TechCare`.
 
@@ -76,7 +76,39 @@ Cada caso se ejecuta directo, sin procedimientos, dentro de una transacción que
 
 Evidencia: `R16_integridad_directa.txt` (20 OK, 0 FALLA).
 
-## 4. Pruebas de la aplicación web
+## 4. Prueba de punta a punta por la API (`backend/pruebas/prueba_api_e2e.py`)
+
+Los scripts SQL prueban la base; esta prueba usa el sistema como lo haría la aplicación: entra con los 5 roles, llama a la API real (conectada como `rol_app`, nunca como `sa`) y comprueba el resultado **y** que lo rechazado no deje cambios a medias. Evidencia completa: `docs/evidencia_pruebas/E2E_api.txt`. **109 OK, 0 FALLA.**
+
+| Bloque | Qué se comprueba | Verificaciones |
+| --- | --- | --- |
+| Seguridad y roles | Los 5 roles inician sesión; clave incorrecta, sin token y token falso dan 401; bodega no crea clientes, caja no crea órdenes, recepción no ve usuarios y técnico no factura (403) | 8 |
+| Clientes y equipos (T01) | Alta de empresa con ñ y tildes, NIT repetido y NIT `CF` de empresa, cliente sin contacto, dos equipos, serie repetida, búsqueda y edición. Los repetidos devuelven 409 con un mensaje que nombra el dato (NIT, serie) | 10 |
+| Orden (T02) | Orden en `RECIBIDO` con la prioridad pedida; prioridad inválida y equipo inexistente rechazados | 4 |
+| Diagnóstico y reparación (T03) | Recepción no diagnostica; no se repara sin diagnóstico (R06); diagnóstico lleva a `ESPERANDO_AUTORIZACION`; costo negativo rechazado; autorización; inicio de reparación | 6 |
+| Repuestos (T04–T05) | Sin stock, cantidad mayor a la existencia, cantidad 0 y repuesto inexistente se rechazan **y el inventario queda igual**; con stock baja exactamente lo usado y el kárdex registra la `SALIDA` con su existencia anterior y resultante; horas fuera de rango rechazadas; reparación finalizada no admite más repuestos; la orden queda en `LISTO` | 15 |
+| Factura, pagos y entrega (T08–T10) | Total = (mano de obra + repuestos al precio del momento) + 12 % de IVA; segunda factura (409); entrega con saldo rechazada; dos pagos parciales; saldo esperado; pago que excede el saldo y pago de 0 rechazados sin cambiar el saldo; el pago final deja el saldo en 0; factura pagada no admite más pagos; entrega y segunda entrega rechazada | 17 |
+| Rechazo del cliente | La orden pasa a `LISTO` sin reparación | 2 |
+| Compras (T06) | Compra con 2 líneas en `PENDIENTE` que no mueve el inventario; documento repetido y compra sin líneas rechazados; caja no recibe (403); al recibir el inventario sube +5 y +3 y el kárdex registra la `ENTRADA`; recibir dos veces (409); un ajuste no puede dejar existencia negativa | 10 |
+| Usuarios y roles | Alta, el usuario entra con su clave; usuario repetido (409, mensaje claro), clave corta y sin roles (400); cambio de roles y de clave (la vieja deja de servir); un usuario desactivado no puede entrar **y su sesión abierta deja de valer (401)**; un administrador no puede desactivarse ni quitarse su propio rol | 11 |
+| Catálogos y auditoría (T14) | Alta de repuesto, categoría, tipo de equipo, marca, proveedor y bodega; código repetido y categoría inexistente con mensaje claro; precio negativo o con 3 decimales (400); recepción sin permiso (403); el cambio de precio no altera el total de una factura ya emitida | 9 |
+| Dashboard y reportes | 9 indicadores del dashboard; órdenes abiertas = órdenes no cerradas de la lista; los 12 reportes responden con datos; la trazabilidad (12) trae pagos; el historial por serie (3) muestra la orden | 17 |
+
+### 4.1 Cómo repetirla
+
+Contra cualquier API conectada a una **base de prueba** (`TechCare_<nombre>`; la prueba crea datos): `python backend/pruebas/prueba_api_e2e.py http://localhost:5080` (clave de los usuarios de prueba por omisión). Termina con código 1 si algo falla.
+
+### 4.2 Reportes: cumplimiento de la sección 5.1 (`database/pruebas/verificar_reportes_5_1.sql`)
+
+Revisa el catálogo de la base (solo lee): cuenta las tablas reales que alcanza cada reporte, directamente o por las vistas y funciones que usa, los `LEFT JOIN` y busca `SELECT *` y `DISTINCT` en el código (ignora comentarios). Evidencia: `docs/evidencia_pruebas/reportes_5_1.txt`.
+
+| Requisito del enunciado | Mínimo | Resultado |
+| --- | --- | --- |
+| Reportes que involucran 6 o más tablas | 4 | **9** (reportes 1, 2, 3, 4, 5, 8, 9, 10 y 12) |
+| Reportes con `LEFT JOIN` necesario y justificado | 3 | **5** (1, 2, 3, 9 y 12) |
+| `SELECT *` o `DISTINCT` en los reportes | 0 | **0** |
+
+## 5. Pruebas de la aplicación web
 
 Además de los scripts, cada pantalla se probó al revisar su PR con la API real (permisos de `rol_app`) y la web compilada, en Chrome automatizado (Playwright), y se repitió un recorrido en la URL pública:
 
@@ -87,12 +119,21 @@ Además de los scripts, cada pantalla se probó al revisar su PR con la API real
 | Caja y acciones de la orden (PR #28–#34) | ✅ Facturar con NIT opcional, pago parcial y total, anular con motivo, entrega bloqueada con saldo; los datos coinciden en SQL |
 | Inventario, kárdex, compras (PR #15, #19) | ✅ Ajuste, compra y recepción mueven el stock y aparecen en el kárdex; 0 saltos, 0 descuadres |
 | Permisos por rol | ✅ Cada rol ve solo su menú y sus botones (por ejemplo, recepción no entra a `/compras`, técnico no ve caja, bodega no ve el taller) |
+| Inicio con resumen del taller (PR #41) | ✅ Las 9 cifras coinciden con `vw_DashboardResumen` para los 5 roles; cada tarjeta lleva a `/ordenes?estado=…`; celular sin desbordes |
+| Clientes, equipos y nueva orden (PR #43) | ✅ Cliente con ñ y tildes, 2 equipos, validaciones antes de enviar, búsqueda, edición; la orden creada queda en `RECIBIDO` con su historial; técnico, bodega y caja no entran |
+| Usuarios (PR #45, API del #42) | ✅ Alta, roles, cambio de clave, desactivación (la sesión abierta se cierra), usuario repetido y quitarse el propio rol rechazados con mensaje |
+| Catálogos (PR #47, API del #44 y #46) | ✅ Las 6 pestañas: alta, edición y desactivación; la descripción y la dirección se conservan al editar; el cambio de precio queda en la auditoría con el usuario; el inventario no se toca |
 | Recorrido en https://techcare-api-grupo-bhl.azurewebsites.net (`v1.0.1`) | ✅ 5 roles, reportes 1–12, caja, órdenes y trazabilidad, celular; consola del navegador sin errores |
 
-## 5. Hallazgos durante las pruebas
+## 6. Hallazgos durante las pruebas
 
 | Hallazgo | Acción |
 | --- | --- |
+| Un administrador podía quitarse su propio rol ADMINISTRADOR (o dejar el sistema sin administrador activo) | Corregido en `UsuariosController`: se rechaza con 400 y siempre debe quedar un administrador activo |
+| Un usuario desactivado conservaba su sesión hasta 8 horas (el token seguía valiendo) | Corregido: el API revisa en cada petición que el usuario siga `ACTIVO` y responde 401 si no |
+| Un NIT, serie, código o usuario repetido mostraba "La operación incumple una regla de integridad de los datos" | Corregido en `SqlErrorMiddleware`: un mensaje claro por restricción ("Ya existe un cliente con ese NIT."), y otro para llaves foráneas y CHECK |
+| Los roles de un usuario quedan fijos dentro de su token: un cambio de roles no se refleja hasta que la sesión vence (8 h) | Documentado, sin corregir: no afecta reglas ni datos; se resuelve volviendo a iniciar sesión |
+| Se acepta un repuesto con precio de venta menor al de compra | Documentado: el enunciado no lo prohíbe; es decisión de negocio |
 | I08: un pago escrito directo en SQL podía superar el total (R12 solo lo validaba `sp_RegistrarPago`) | Corregido con `trg_Pago_NoExcedeTotal` (PR #38); I08 e I18 ahora dan 51011 e I19–I20 confirman que los pagos válidos siguen entrando |
 | `T03_flujo_reparacion.sql` revisa una orden creada a mano en la base personal de B | T03 se probó por la API sobre la base de prueba (sección 2) |
 | Las fechas se guardan con `SYSDATETIME()` y el servidor (Docker, Azure SQL) está en UTC | Lo registrado después de las 18:00 de Guatemala aparece con la fecha del día siguiente; documentado en el manual técnico, no afecta reglas ni totales |
