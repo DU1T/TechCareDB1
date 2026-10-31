@@ -30,7 +30,7 @@ export const MENU: ItemMenu[] = [
     icono: 'i-lucide-users',
     grupo: 'Taller',
     permiso: 'CLIENTE_GESTIONAR',
-    listo: false,
+    listo: true,
   },
   {
     etiqueta: 'Nueva orden',
@@ -39,7 +39,7 @@ export const MENU: ItemMenu[] = [
     icono: 'i-lucide-clipboard-plus',
     grupo: 'Taller',
     permiso: 'ORDEN_CREAR',
-    listo: false,
+    listo: true,
   },
   {
     etiqueta: 'Órdenes',
