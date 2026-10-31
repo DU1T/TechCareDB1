@@ -143,6 +143,25 @@ public sealed class UsuariosController : ControllerBase
                 error = "No puede desactivar su propio usuario."
             });
 
+        // Nadie se quita su propio rol de Administrador y nunca se queda el sistema sin un administrador activo
+        var idAdmin = await _repo.IdRolAdministradorAsync();
+        var seguiraAdmin = dto.Estado == "ACTIVO" &&
+            dto.IdRoles!.Contains(idAdmin);
+
+        if (id == User.IdUsuario() &&
+            !dto.IdRoles!.Contains(idAdmin))
+            return BadRequest(new
+            {
+                error = "No puede quitarse su propio rol de Administrador."
+            });
+
+        if (!seguiraAdmin &&
+            await _repo.OtrosAdministradoresActivosAsync(id) == 0)
+            return BadRequest(new
+            {
+                error = "Debe quedar al menos un administrador activo."
+            });
+
         if (dto.Password is not null &&
             dto.Password.Length < 8)
             return BadRequest(new

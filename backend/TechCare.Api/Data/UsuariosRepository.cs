@@ -87,6 +87,36 @@ public sealed class UsuariosRepository
             """);
     }
 
+    public async Task<int> IdRolAdministradorAsync()
+    {
+        await using var cn = _db.Create();
+
+        return await cn.ExecuteScalarAsync<int>(
+            """
+            SELECT idRol
+            FROM dbo.Rol
+            WHERE nombre = 'ADMINISTRADOR';
+            """);
+    }
+
+    // Administradores activos distintos del usuario que se está editando
+    public async Task<int> OtrosAdministradoresActivosAsync(int idExcluido)
+    {
+        await using var cn = _db.Create();
+
+        return await cn.ExecuteScalarAsync<int>(
+            """
+            SELECT COUNT(DISTINCT u.idUsuario)
+            FROM dbo.Usuario u
+            JOIN dbo.UsuarioRol ur ON ur.idUsuario = u.idUsuario
+            JOIN dbo.Rol r ON r.idRol = ur.idRol
+            WHERE r.nombre = 'ADMINISTRADOR'
+              AND u.estado = 'ACTIVO'
+              AND u.idUsuario <> @idExcluido;
+            """,
+            new { idExcluido });
+    }
+
     private static async Task ValidarRolesAsync(
         System.Data.Common.DbConnection cn,
         System.Data.Common.DbTransaction tx,
